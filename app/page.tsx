@@ -64,7 +64,7 @@ export default function Home() {
   const [ringStyle, setRingStyle] = useState(savedSettings?.ringStyle ?? 1); // 1 = filled (default), 0 = ring
   const [showText, setShowText] = useState(savedSettings?.showText ?? true); // Show bottom text (default)
   const [selectedDevice, setSelectedDevice] = useState(savedSettings?.deviceIndex !== undefined ? DEVICE_PRESETS[savedSettings.deviceIndex] : DEVICE_PRESETS[0]);
-  const [buttonText, setButtonText] = useState('1. get link');
+  const [buttonText, setButtonText] = useState('1. Get link');
   const [imageUrl, setImageUrl] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [hideOverlay, setHideOverlay] = useState(false); // Hide overlay in preview only (not saved)
