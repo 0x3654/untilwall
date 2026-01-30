@@ -462,7 +462,7 @@ export default function Home() {
               {buttonText}
             </button>
             <a
-              href="https://www.icloud.com/shortcuts/2e1536903783409c9445bb04dc381637"
+              href={process.env.NEXT_PUBLIC_SHORTCUT_URL || "https://www.icloud.com/shortcuts/2e1536903783409c9445bb04dc381637"}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full mt-3 block text-center text-white px-6 py-3 rounded-lg font-medium transition-all hover:bg-opacity-80"
@@ -493,30 +493,34 @@ export default function Home() {
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>3.</span>
-                    <span>Press <strong className="text-white">"Get shortcut"</strong> (in browser) or <strong className="text-white">"Add shortcut"</strong> (in the form)</span>
+                    <span>Press <strong className="text-white">"Set"</strong> in shortcut command and choose <strong className="text-white">"Lock Screen"</strong> to select which screen to set wallpaper on</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>4.</span>
-                    <span>Paste the link into the shortcut field</span>
+                    <span>Press <strong className="text-white">"Get shortcut"</strong> (in browser) or <strong className="text-white">"Add shortcut"</strong> (in the form)</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>5.</span>
-                    <span>Close the shortcut and go to <strong className="text-white">Automation</strong> in the Shortcuts app</span>
+                    <span>Paste the link into the shortcut field</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>6.</span>
-                    <span>Create a new <strong className="text-white">Personal Automation</strong> → <strong className="text-white">"Run immediately"</strong> → Turn off <strong className="text-white">"Notify when run"</strong></span>
+                    <span>Close the shortcut and go to <strong className="text-white">Automation</strong> in the Shortcuts app</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>7.</span>
-                    <span><strong className="text-white">When:</strong> Set the time (e.g., every day at 6:00 AM) → <strong className="text-white">Repeat daily</strong> → Run immediately → Turn off "Notify when run"</span>
+                    <span>Create a new <strong className="text-white">Personal Automation</strong> → <strong className="text-white">"Run immediately"</strong> → Turn off <strong className="text-white">"Notify when run"</strong></span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>8.</span>
-                    <span><strong className="text-white">Do:</strong> Add action <strong className="text-white">"Run Shortcut"</strong> and select the shortcut you added</span>
+                    <span><strong className="text-white">When:</strong> Set the time (e.g., every day at 6:00 AM) → <strong className="text-white">Repeat daily</strong> → Run immediately → Turn off "Notify when run"</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>9.</span>
+                    <span><strong className="text-white">Do:</strong> Add action <strong className="text-white">"Run Shortcut"</strong> and select the shortcut you added</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold" style={{ color: '#ff6b35' }}>10.</span>
                     <span><strong className="text-white">Start the shortcut manually first time</strong> to grant permissions</span>
                   </li>
                 </ol>

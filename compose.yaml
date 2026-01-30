@@ -1,5 +1,6 @@
 services:
   untilwall:
+    container_name: untilwall
     image: 0x3654/untilwall:latest
     ports:
       - "3000:3000"
