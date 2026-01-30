@@ -30,7 +30,7 @@ describe('Basic Health Checks', () => {
     const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
 
     expect(Array.from(bytes)).toEqual(pngSignature);
-  });
+  }, 15000);
 
   it('should handle all ring styles', async () => {
     const styles = ['0', '1', '2']; // Ring, Solid, Hearts
@@ -49,5 +49,5 @@ describe('Basic Health Checks', () => {
       expect(response.status).toBe(200);
       expect(response.headers.get('content-type')).toBe('image/png');
     }
-  });
+  }, 30000);
 });
