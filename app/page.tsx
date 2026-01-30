@@ -599,15 +599,26 @@ export default function Home() {
           <p className="text-sm mb-2" style={{ color: '#999999' }}>
             © {new Date().getFullYear()} untilwall
           </p>
-          <a
-            href="https://github.com/0x3654"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm hover:underline transition-colors"
-            style={{ color: '#ff6b35' }}
-          >
-            0x3654
-          </a>
+          <div className="flex gap-4 justify-center text-sm">
+            <a
+              href="https://github.com/0x3654/untilwall"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline transition-colors"
+              style={{ color: '#999999' }}
+            >
+              Opensource
+            </a>
+            <a
+              href="https://github.com/0x3654"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline transition-colors"
+              style={{ color: '#ff6b35' }}
+            >
+              0x3654
+            </a>
+          </div>
         </div>
       </footer>
     </main>
