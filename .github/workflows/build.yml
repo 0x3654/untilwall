@@ -58,8 +58,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform }}
-            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform }}
+            ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
 
@@ -81,14 +81,14 @@ jobs:
           # Create manifest for latest
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:latest \
-            ${{ env.DOCKER_IMAGE }}:latest-linux-amd64 \
-            ${{ env.DOCKER_IMAGE }}:latest-linux-arm64
+            ${{ env.DOCKER_IMAGE }}:latest-amd64 \
+            ${{ env.DOCKER_IMAGE }}:latest-arm64
 
           # Create manifest for SHA tag
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} \
-            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-linux-amd64 \
-            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-linux-arm64
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-amd64 \
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-arm64
 
           echo "✅ Multi-arch manifests created"
           echo "Available tags:"
