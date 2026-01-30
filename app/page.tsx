@@ -69,6 +69,52 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [hideOverlay, setHideOverlay] = useState(false); // Hide overlay in preview only (not saved)
   const [previewLoading, setPreviewLoading] = useState(false); // Preview loading state
+  const [stats, setStats] = useState<any>(null); // Stats data
+
+  // Track visitor on page load (client-side)
+  useEffect(() => {
+    const trackVisit = async () => {
+      // Check if visitor_id cookie exists
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`.split(`; ${name}=`).pop()?.split(';').shift();
+        return value;
+      };
+
+      const setCookie = (name: string, value: string, days: number) => {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+      };
+
+      let visitorId = getCookie('visitor_id');
+
+      if (!visitorId) {
+        // Generate visitor ID on client
+        visitorId = crypto.randomUUID();
+        setCookie('visitor_id', visitorId, 365);
+
+        // Send to server for tracking
+        try {
+          await fetch('/api/visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visitorId })
+          });
+          console.log('Tracked new visitor:', visitorId);
+        } catch (err) {
+          console.error('Failed to track visit:', err);
+        }
+      }
+    };
+
+    trackVisit();
+
+    // Load stats
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch(err => console.error('Failed to fetch stats:', err));
+  }, []);
 
   // Safe area offsets (in percentages) - use device defaults if available
   const defaultSafeArea = selectedDevice.defaultSafeArea || { top: 0, bottom: 0, left: 0, right: 0 };
@@ -116,6 +162,8 @@ export default function Home() {
       setOffsetRight(safeArea.right ?? 0);
     }
   }, [selectedDevice, hasWidgets]);
+
+  // Build ISO dates from parts
 
   // Build ISO dates from parts
   const startDate = dmyToIso(startDay, startMonth, startYear);
@@ -595,11 +643,11 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="mt-8 py-6 text-center" style={{ backgroundColor: '#1a1a1a' }}>
-        <div className="container mx-auto px-4">
-          <p className="text-sm mb-2" style={{ color: '#999999' }}>
+        <div className="container mx-auto px-4 space-y-2">
+          <p className="text-sm" style={{ color: '#999999' }}>
             © {new Date().getFullYear()} untilwall
           </p>
-          <div className="flex gap-4 justify-center text-sm">
+          <p className="text-sm flex flex-wrap items-center justify-center gap-3" style={{ color: '#999999' }}>
             <a
               href="https://github.com/0x3654/untilwall"
               target="_blank"
@@ -618,7 +666,26 @@ export default function Home() {
             >
               0x3654
             </a>
-          </div>
+            {stats && stats.uniqueVisitors > 0 && (
+              <>
+                <span className="text-xs">{stats.uniqueVisitors} 🍪</span>
+                <span className="text-xs">{stats.imageGenerations} 🖼</span>
+                {stats.devices && Object.keys(stats.devices).length > 0 && (
+                  <>
+                    <span className="text-xs">
+                      {(stats.devices.iPhone || stats.devices.iphone || 0) +
+                      (stats.devices.iPad || stats.devices.ipad || 0) +
+                      (stats.devices.android || stats.devices.Android || 0)} 📱
+                    </span>
+                    <span className="text-xs">
+                      {(stats.devices.Mac || stats.devices.mac || 0) +
+                      (stats.devices.Windows || stats.devices.windows || 0)} 💻
+                    </span>
+                  </>
+                )}
+              </>
+            )}
+          </p>
         </div>
       </footer>
     </main>

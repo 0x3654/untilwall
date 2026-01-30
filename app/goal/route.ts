@@ -1,11 +1,22 @@
 import { NextRequest } from 'next/server';
 import sharp from 'sharp';
+import { trackVisitor, trackImageGeneration } from '@/lib/stats';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const format = searchParams.get('format') || 'png'; // Support SVG for faster preview
+
+  // Track image generation (only for downloads, not previews)
+  const userAgent = request.headers.get('user-agent') || '';
+  const responseHeaders: HeadersInit = {};
+
+  // Only track actual downloads, not previews (format=svg is preview only)
+  if (format !== 'svg') {
+    trackImageGeneration(userAgent);
+  }
 
   // Get parameters
   const startDate = searchParams.get('start_date') || '2000-01-01';
@@ -13,7 +24,6 @@ export async function GET(request: NextRequest) {
   const hasWidgets = searchParams.get('has_widgets') === 'true';
   const width = parseInt(searchParams.get('width') || '1290');
   const height = parseInt(searchParams.get('height') || '2796');
-  const format = searchParams.get('format') || 'png'; // Support SVG for faster preview
   const offsetTop = parseFloat(searchParams.get('offset_top') || '0');
   const offsetBottom = parseFloat(searchParams.get('offset_bottom') || '0');
   const offsetLeft = parseFloat(searchParams.get('offset_left') || '0');
@@ -195,6 +205,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'image/svg+xml',
         'Cache-Control': 'no-store, no-cache, must-revalidate',
         'X-Robots-Tag': 'noindex, nofollow, nosnippet',
+        ...responseHeaders,
       },
     });
   }
@@ -214,6 +225,7 @@ export async function GET(request: NextRequest) {
       'Expires': '0',
       'X-Robots-Tag': 'noindex, nofollow, nosnippet',
       'X-Content-Type-Options': 'nosniff',
+      ...responseHeaders,
     },
   });
 }
