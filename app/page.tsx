@@ -539,7 +539,7 @@ export default function Home() {
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>6.</span>
-                    <span>Close the shortcut and go to <strong className="text-white">Automation</strong> in the Shortcuts app</span>
+                    <span>Close the shortcut and go to <strong className="text-white">Automation</strong> in the Shortcuts app</span>1
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>7.</span>
