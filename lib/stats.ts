@@ -69,7 +69,7 @@ export function trackImageGeneration(userAgent: string) {
   let device = 'other';
   if (/iPhone/.test(userAgent)) device = 'iPhone';
   else if (/iPad/.test(userAgent)) device = 'iPad';
-  else if (/Macintosh/.test(userAgent)) device = 'Mac';
+  else if (/Macintosh|Mac OS X|macOS/.test(userAgent)) device = 'Mac';
   else if (/Android/.test(userAgent)) device = 'Android';
   else if (/Windows/.test(userAgent)) device = 'Windows';
 
