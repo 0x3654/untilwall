@@ -30,8 +30,8 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   { name: 'iPhone Xs', width: 1125, height: 2436, type: 'iphone', orientation: 'portrait', circleSize: 50, circleGap: 20, padding: 18, defaultSafeArea: { top: 25, bottom: 10, left: 15, right: 15 } },
 
   // iPads (portrait and landscape)
-  { name: 'iPad Pro 12.9" Portrait', width: 2048, height: 2732, type: 'ipad', orientation: 'portrait', circleSize: 48, circleGap: 20, padding: 80, defaultSafeArea: { top: 5, bottom: 5 } },
-  // { name: 'iPad Pro 12.9" Landscape', width: 2732, height: 2048, type: 'ipad', orientation: 'landscape', circleSize: 48, circleGap: 20, padding: 80 },
+  { name: 'iPad Pro 13" Portrait', width: 2048, height: 2732, type: 'ipad', orientation: 'portrait', circleSize: 48, circleGap: 20, padding: 80, defaultSafeArea: { top: 5, bottom: 5 } },
+  { name: 'iPad Pro 13" Landscape', width: 2732, height: 2048, type: 'ipad', orientation: 'landscape', circleSize: 48, circleGap: 20, padding: 80, defaultSafeArea: { top: 5, bottom: 5 } },
   // { name: 'iPad Pro 11" Portrait', width: 1668, height: 2388, type: 'ipad', orientation: 'portrait', circleSize: 44, circleGap: 18, padding: 70 },
   // { name: 'iPad Pro 11" Landscape', width: 2388, height: 1668, type: 'ipad', orientation: 'landscape', circleSize: 44, circleGap: 18, padding: 70 },
   // { name: 'iPad Air Portrait', width: 1640, height: 2360, type: 'ipad', orientation: 'portrait', circleSize: 44, circleGap: 18, padding: 70 },

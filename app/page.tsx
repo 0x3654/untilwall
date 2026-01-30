@@ -67,6 +67,7 @@ export default function Home() {
   const [buttonText, setButtonText] = useState('1. get link');
   const [imageUrl, setImageUrl] = useState('');
   const [showHelp, setShowHelp] = useState(false);
+  const [hideOverlay, setHideOverlay] = useState(false); // Hide overlay in preview only (not saved)
 
   // Safe area offsets (in percentages) - use device defaults if available
   const defaultSafeArea = selectedDevice.defaultSafeArea || { top: 0, bottom: 0, left: 0, right: 0 };
@@ -168,10 +169,11 @@ export default function Home() {
   };
 
   // Calculate preview scale to fit in container
-  const [containerSize, setContainerSize] = useState({ width: 400, height: 500 });
+  const [containerSize, setContainerSize] = useState({ width: 650, height: 500 });
   useEffect(() => {
     const updateSize = () => {
-      const maxWidth = Math.min(400, (window.innerWidth - 32) / 2 - 32);
+      // Increase container width for better preview size, especially for landscape devices
+      const maxWidth = Math.min(650, (window.innerWidth - 32) / 2 - 32);
       setContainerSize({ width: maxWidth, height: 500 });
     };
     updateSize();
@@ -193,6 +195,23 @@ export default function Home() {
   }
 
   const scale = scaleWidth / selectedDevice.width;
+
+  // Get overlay image based on device and widget settings
+  const getOverlayImage = (): string | null => {
+    if (selectedDevice.name.includes('iPhone 15 Pro Max')) {
+      return hasWidgets ? '/overlay/15promax_widget.png' : '/overlay/15promax.png';
+    }
+    if (selectedDevice.name.includes('iPhone Xs')) {
+      return hasWidgets ? '/overlay/Xs_widget.png' : '/overlay/Xs.png';
+    }
+    if (selectedDevice.name.includes('iPad Pro 13" Portrait')) {
+      return hasWidgets ? '/overlay/ipad 13 portrait_widget.png' : '/overlay/ipad 13 portrait.png';
+    }
+    if (selectedDevice.name.includes('iPad Pro 13" Landscape')) {
+      return hasWidgets ? '/overlay/ipad 13 landscape_widget.png' : '/overlay/ipad 13 landscape.png';
+    }
+    return null;
+  };
 
   return (
     <main className="min-h-screen bg-lc-bg-dark flex flex-col">
@@ -413,6 +432,21 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Hide overlay checkbox */}
+            <div className="flex items-center gap-2 mt-3">
+              <input
+                type="checkbox"
+                id="hideOverlay"
+                checked={hideOverlay}
+                onChange={(e) => setHideOverlay(e.target.checked)}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: '#ff6b35' }}
+              />
+              <label htmlFor="hideOverlay" className="text-sm cursor-pointer" style={{ color: '#cccccc' }}>
+                Hide overlay (preview only)
+              </label>
+            </div>
+
             {/* Live Preview with aspect ratio */}
             <div className="rounded-lg overflow-hidden relative flex items-center justify-center h-[300px] md:h-[500px]" style={{ backgroundColor: '#1a1a1a' }}>
               <div
@@ -433,24 +467,24 @@ export default function Home() {
                     borderRadius: '16px',
                   }}
                 />
-                {(selectedDevice.name.includes('iPhone 15 Pro Max') || selectedDevice.name.includes('iPhone Xs')) && (
-                  <img
-                    src={`/overlay/${selectedDevice.name.includes('iPhone 15 Pro Max')
-                      ? (hasWidgets ? '15promax_widget.png' : '15promax.png')
-                      : (hasWidgets ? 'Xs_widget.png' : 'Xs.png')
-                    }`}
-                    alt="Device overlay"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
+                {!hideOverlay && (() => {
+                  const overlay = getOverlayImage();
+                  return overlay ? (
+                    <img
+                      src={overlay}
+                      alt="Device overlay"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  ) : null;
+                })()}
               </div>
             </div>
 
@@ -493,15 +527,15 @@ export default function Home() {
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>3.</span>
-                    <span>Press <strong className="text-white">"Set"</strong> in shortcut command and choose <strong className="text-white">"Lock Screen"</strong> to select which screen to set wallpaper on</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold" style={{ color: '#ff6b35' }}>4.</span>
                     <span>Press <strong className="text-white">"Get shortcut"</strong> (in browser) or <strong className="text-white">"Add shortcut"</strong> (in the form)</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="font-bold" style={{ color: '#ff6b35' }}>5.</span>
+                    <span className="font-bold" style={{ color: '#ff6b35' }}>4.</span>
                     <span>Paste the link into the shortcut field</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold" style={{ color: '#ff6b35' }}>5.</span>
+                    <span>In second command press on <strong className="text-white">"Wallpaper"</strong> and choose <strong className="text-white">"Lock Screen"</strong></span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold" style={{ color: '#ff6b35' }}>6.</span>
