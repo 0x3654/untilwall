@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const hasWidgets = searchParams.get('has_widgets') === 'true';
   const width = parseInt(searchParams.get('width') || '1290');
   const height = parseInt(searchParams.get('height') || '2796');
+  const format = searchParams.get('format') || 'png'; // Support SVG for faster preview
   const offsetTop = parseFloat(searchParams.get('offset_top') || '0');
   const offsetBottom = parseFloat(searchParams.get('offset_bottom') || '0');
   const offsetLeft = parseFloat(searchParams.get('offset_left') || '0');
@@ -185,6 +186,17 @@ export async function GET(request: NextRequest) {
     }
 
     return svg;
+  }
+
+  // Return SVG directly for faster preview (if format=svg)
+  if (format === 'svg') {
+    return new Response(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Robots-Tag': 'noindex, nofollow, nosnippet',
+      },
+    });
   }
 
   // Convert SVG to PNG

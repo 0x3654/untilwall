@@ -34,7 +34,8 @@ FROM base AS runner
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME="0.0.0.0"
+    HOSTNAME="0.0.0.0" \
+    NODE_OPTIONS="--max-old-space-size=256"
 
 # Install runtime dependencies and create user in single layer
 RUN apk add --no-cache fontconfig ttf-dejavu && \

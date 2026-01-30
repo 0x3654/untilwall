@@ -68,6 +68,7 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [hideOverlay, setHideOverlay] = useState(false); // Hide overlay in preview only (not saved)
+  const [previewLoading, setPreviewLoading] = useState(false); // Preview loading state
 
   // Safe area offsets (in percentages) - use device defaults if available
   const defaultSafeArea = selectedDevice.defaultSafeArea || { top: 0, bottom: 0, left: 0, right: 0 };
@@ -120,25 +121,38 @@ export default function Home() {
   const startDate = dmyToIso(startDay, startMonth, startYear);
   const endDate = dmyToIso(endDay, endMonth, endYear);
 
-  // Update preview image when parameters change
+  // Update preview image when parameters change (with debounce)
   useEffect(() => {
-    const params = new URLSearchParams({
-      start_date: startDate,
-      end_date: endDate,
-      theme: 'dark',
-      has_widgets: hasWidgets.toString(),
-      ring_style: ringStyle.toString(),
-      show_text: showText ? '1' : '0',
-      width: selectedDevice.width.toString(),
-      height: selectedDevice.height.toString(),
-      offset_top: offsetTop.toString(),
-      offset_bottom: offsetBottom.toString(),
-      offset_left: offsetLeft.toString(),
-      offset_right: offsetRight.toString(),
-      t: Date.now().toString(), // Prevent caching
-    });
-    const url = `/goal?${params.toString()}`;
-    setImageUrl(url);
+    setPreviewLoading(true);
+
+    const timeoutId = setTimeout(() => {
+      const params = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+        theme: 'dark',
+        has_widgets: hasWidgets.toString(),
+        ring_style: ringStyle.toString(),
+        show_text: showText ? '1' : '0',
+        width: selectedDevice.width.toString(),
+        height: selectedDevice.height.toString(),
+        offset_top: offsetTop.toString(),
+        offset_bottom: offsetBottom.toString(),
+        offset_left: offsetLeft.toString(),
+        offset_right: offsetRight.toString(),
+        format: 'svg', // Use SVG for faster preview!
+        t: Date.now().toString(), // Prevent caching
+      });
+      const url = `/goal?${params.toString()}`;
+      setImageUrl(url);
+
+      // Set loading to false when image loads
+      const img = new Image();
+      img.onload = () => setPreviewLoading(false);
+      img.onerror = () => setPreviewLoading(false); // Also hide on error
+      img.src = url;
+    }, 300); // 300ms debounce (faster response)
+
+    return () => clearTimeout(timeoutId);
   }, [startDate, endDate, hasWidgets, ringStyle, showText, selectedDevice, offsetTop, offsetBottom, offsetLeft, offsetRight]);
 
   const shareUrl = async () => {
@@ -456,6 +470,17 @@ export default function Home() {
                   height: `${selectedDevice.height * scale}px`,
                 }}
               >
+                {previewLoading && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center rounded-lg"
+                    style={{ backgroundColor: '#1a1a1a', zIndex: 10 }}
+                  >
+                    <div className="text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 mb-2" style={{ borderColor: '#ff6b35' }}></div>
+                      <div className="text-sm" style={{ color: '#cccccc' }}>Generating preview...</div>
+                    </div>
+                  </div>
+                )}
                 <img
                   src={imageUrl}
                   alt="Preview"
@@ -465,6 +490,7 @@ export default function Home() {
                     objectFit: 'contain',
                     border: '1px solid #ffffff',
                     borderRadius: '16px',
+                    opacity: previewLoading ? 0.3 : 1,
                   }}
                 />
                 {!hideOverlay && (() => {
