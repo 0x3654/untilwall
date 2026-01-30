@@ -10,9 +10,8 @@ env:
   DOCKER_TAG: ${{ github.sha }}
 
 jobs:
-  build-and-push:
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,9 +30,43 @@ jobs:
           sleep 10
           npm test
 
-      - name: Set up QEMU (for multi-arch)
-        uses: docker/setup-qemu-action@v3
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform }}
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+
+  merge-manifests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -43,34 +76,21 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push (multi-arch)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:latest
-            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
-
-      - name: Trigger Semaphore deployment
+      - name: Create multi-arch manifest
         run: |
-          echo "Triggering Semaphore..."
-          curl -X POST --max-time 5 \
-            "${{ secrets.SEMAPHORE_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "image": "${{ env.DOCKER_IMAGE }}:latest",
-              "sha": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}",
-              "actor": "${{ github.actor }}",
-              "docker_image": "${{ env.DOCKER_IMAGE }}"
-            }'
+          # Create manifest for latest
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
+            ${{ env.DOCKER_IMAGE }}:latest-linux-amd64 \
+            ${{ env.DOCKER_IMAGE }}:latest-linux-arm64
 
-          echo "✅ Done! Semaphore will:"
-          echo "  - Deploy :latest"
-          echo "  - Run health checks"
-          echo "  - Update :stable if passed"
-          echo "  - Rollback + Telegram alert if failed"
+          # Create manifest for SHA tag
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} \
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-linux-amd64 \
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-linux-arm64
+
+          echo "✅ Multi-arch manifests created"
+          echo "Available tags:"
+          echo "  - ${{ env.DOCKER_IMAGE }}:latest (amd64 + arm64)"
+          echo "  - ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} (amd64 + arm64)"
