@@ -1,0 +1,72 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Ручной запуск
+
+env:
+  DOCKER_IMAGE: 0x3654/untilwall
+  DOCKER_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          npm run dev &
+          sleep 10
+          npm test
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+
+      - name: Trigger Semaphore deployment
+        run: |
+          echo "Triggering Semaphore..."
+          curl -X POST --max-time 5 \
+            "${{ secrets.SEMAPHORE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "image": "${{ env.DOCKER_IMAGE }}:latest",
+              "sha": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}",
+              "actor": "${{ github.actor }}",
+              "docker_image": "${{ env.DOCKER_IMAGE }}"
+            }'
+
+          echo "✅ Done! Semaphore will:"
+          echo "  - Deploy :latest"
+          echo "  - Run health checks"
+          echo "  - Update :stable if passed"
+          echo "  - Rollback + Telegram alert if failed"

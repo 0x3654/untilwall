@@ -1,0 +1,34 @@
+name: Promote to Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Git SHA to promote to stable'
+        required: true
+  repository_dispatch:
+    types: [promote-stable]
+
+env:
+  DOCKER_IMAGE: 0x3654/untilwall
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Promote to stable
+        run: |
+          SHA="${{ github.event.inputs.sha || github.event.client_payload.sha }}"
+          echo "Promoting $SHA to :stable..."
+
+          docker pull ${{ env.DOCKER_IMAGE }}:$SHA
+          docker tag ${{ env.DOCKER_IMAGE }}:$SHA ${{ env.DOCKER_IMAGE }}:stable
+          docker push ${{ env.DOCKER_IMAGE }}:stable
+
+          echo "✅ Successfully promoted to :stable"
