@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
   return new Response(new Uint8Array(pngBuffer), {
     headers: {
       'Content-Type': 'image/png',
-      'Content-Disposition': `attachment; filename="life-calendar.png"`,
+      'Content-Disposition': `inline; filename="untilwall.png"`,
       'Cache-Control': 'no-store, no-cache, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
