@@ -12,7 +12,7 @@ LABEL maintainer="until-wall" \
 FROM base AS deps
 # Install system dependencies only
 RUN apk add --no-cache libc6-compat
-COPY src/package.json src/package-lock.json* ./
+COPY package.json package-lock.json* ./
 # Prefer offline for faster builds, clean install
 RUN npm ci --prefer-offline && \
     npm cache clean --force
@@ -23,7 +23,7 @@ LABEL stage="dependencies"
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
-COPY src/ ./
+COPY . ./
 RUN npm run build
 
 LABEL stage="builder"
