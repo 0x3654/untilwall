@@ -3,6 +3,14 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package*.json'
+      - 'package-lock.json'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:  # Ручной запуск
 
 env:
@@ -54,7 +62,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./src
           platforms: ${{ matrix.platform }}
           push: true
           tags: |

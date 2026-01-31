@@ -12,7 +12,7 @@ LABEL maintainer="until-wall" \
 FROM base AS deps
 # Install system dependencies only
 RUN apk add --no-cache libc6-compat
-COPY package.json package-lock.json* ./
+COPY src/package.json src/package-lock.json* ./
 # Prefer offline for faster builds, clean install
 RUN npm ci --prefer-offline && \
     npm cache clean --force
@@ -23,7 +23,7 @@ LABEL stage="dependencies"
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY src/ ./
 RUN npm run build
 
 LABEL stage="builder"
@@ -55,7 +55,7 @@ USER nextjs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1})"
+    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}"
 
 EXPOSE 3000
 

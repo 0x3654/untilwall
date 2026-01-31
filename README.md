@@ -14,7 +14,7 @@ Generate personalized life calendar wallpapers that visualize your life journey 
 
 ## Features
 
-- 🎨 **Three Visual Styles** - Solid circles, elegant rings, or hearts (for your precious hearts ❤️)
+- 🎨 **Multiple Visual Styles** - Solid circles, elegant rings, hearts, emojis, animals, and more (for your precious hearts ❤️)
 - 📱 **Multi-Device Support** - Optimized presets for iPhone, iPad, and Mac with device-specific overlays
 - 🎯 **Widget Compatible** - Reserve space for iOS widgets at the top
 - 🖼️ **High Resolution** - Crisp output for Retina displays at device native resolutions
@@ -34,8 +34,7 @@ Generate personalized life calendar wallpapers that visualize your life journey 
 
 ## Quick Start
 
-### Using Docker (Recommended)
-
+### Using Docker
 ```bash
 # Clone the repository
 git clone https://github.com/0x3654/untilwall.git
@@ -50,14 +49,23 @@ docker compose up -d
 ### Local Development
 
 ```bash
-# Install dependencies
-npm install
+# Clone the repository
+git clone https://github.com/0x3654/untilwall.git
+cd untilwall
 
-# Run development server
-npm run dev
+# Build and start (builds with same name as compose.yaml for local priority)
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
+
+# View logs
+docker compose logs -f
 
 # Open http://localhost:3000
+
+# Rebuild and restart after code changes
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
 ```
+
+This builds the image with the same name as specified in `compose.yaml`, ensuring your locally built image takes priority over the remote one.
 
 ## Configuration
 
@@ -78,10 +86,10 @@ The application needs to know its public URL to generate correct links for the i
    NEXT_PUBLIC_APP_URL=http://localhost:3000
 
    # Local network IP
-   NEXT_PUBLIC_APP_URL=http://10.0.1.166:3000
+   NEXT_PUBLIC_APP_URL=http://192.168.1.10:3000
 
    # Production domain
-   NEXT_PUBLIC_APP_URL=https://untilwall.0x3654.com
+   NEXT_PUBLIC_APP_URL=https://untilwall.app.example
    ```
 
 3. Restart the container:
@@ -109,40 +117,10 @@ The `.env` file is gitignored, so users can configure their own URL. Document th
 
 1. **Select Device** - Choose your Apple device from presets
 2. **Set Date Range** - Enter your birth date and life expectancy
-3. **Customize** - Adjust ring style (Solid/Ring/Hearts), widget space, and text display
-4. **Generate** - Click "Download Wallpaper" to save your wallpaper
-5. **Apply** - Set as wallpaper on your device
+3. **Customize** - Adjust dot style, widget space, footer text display, colors, offsets
+4. **Get shortscut** - Click "Get shortscut" to setup autorenew wallpaper every day.
+5. **HELP** - If you need help press button "HELP!!!"
 
-### iOS Shortcuts Integration
-
-Automatically generate and update your wallpaper without opening the app:
-
-1. Press **"1. get link"** - copies your personalized configuration to clipboard
-2. Press **"2. Get shortcut"** - opens the iCloud Shortcuts link
-3. Add the shortcut to your iPhone
-4. Run the shortcut - it will generate your wallpaper and prompt to save it
-5. Set as wallpaper and enjoy!
-
-Your settings are automatically saved, so the shortcut always uses your latest preferences.
-
-## Visual Styles
-
-### Solid (Filled)
-- Past days: Filled white circles ⚪
-- Current day: Orange circle 🟠
-- Future days: Gray circles ⚫
-
-### Ring (Outline)
-- Past days: White outline rings ⭕
-- Current day: Orange filled ring 🟠
-- Future days: Gray outline rings ⚫
-
-### Hearts
-- Past days: White hearts ❤️
-- Current day: Orange healing heart ❤️‍🩹
-- Future days: Gray broken hearts 💔
-
-*Each circle/heart represents one **day** of your life*
 
 ## Device Presets
 
@@ -162,26 +140,58 @@ Your settings are automatically saved, so the shortcut always uses your latest p
 
 ### `GET /goal`
 
-Generate PNG calendar image.
+Generate PNG/SVG calendar image.
+
+**All parameters are optional** - the API will use sensible defaults if not provided.
 
 **Parameters:**
-- `start_date` - Start date (ISO format)
-- `end_date` - End date (ISO format)
-- `width` - Image width in pixels
-- `height` - Image height in pixels
-- `offset_top` - Top safe area offset (%)
-- `offset_bottom` - Bottom safe area offset (%)
-- `offset_left` - Left safe area offset (%)
-- `offset_right` - Right safe area offset (%)
-- `ring_style` - Ring style: 1 = Solid (filled circles), 0 = Ring (outline), 2 = Hearts
-- `show_text` - 1 = show text, 0 = hide
-- `has_widgets` - Reserve 15% height for widgets (0 or 1)
-- `theme` - Theme (currently: dark)
 
-**Example:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | string | `2000-01-01` | Start date in ISO format (YYYY-MM-DD) |
+| `end_date` | string | `2080-01-01` | End date in ISO format (YYYY-MM-DD) |
+| `width` | integer | `1290` | Image width in pixels |
+| `height` | integer | `2796` | Image height in pixels |
+| `offset_top` | float | `0` | Top safe area offset (percentage, 0-50) |
+| `offset_bottom` | float | `0` | Bottom safe area offset (percentage, 0-50) |
+| `offset_left` | float | `0` | Left safe area offset (percentage, 0-50) |
+| `offset_right` | float | `0` | Right safe area offset (percentage, 0-50) |
+| `ring_style` | integer | `1` | Dot style: 0=Ring, 1=Solid, 2=Hearts, 3=Poop, 4=Piggy, 5=Money, 6=Dachshund, 7=Cat, 8=Paw, 9=Emo, 10=Gold, 11=Pink G-Wagen |
+| `dot_scale` | float | `1.0` | Dot size multiplier (0.5-2.0) |
+| `show_text` | string/integer | `1` | Show bottom text: `1` or `true` = show, `0` = hide |
+| `has_widgets` | string/boolean | `false` | Reserve 15% height for widgets: `true` or `1` = yes |
+| `theme` | string | `dark` | Color theme (currently only `dark` supported) |
+| `bg_color` | string | `#1a1a1a` | Background color (hex) |
+| `past_color` | string | `#ffffff` | Past days color (hex) |
+| `current_color` | string | `#ff6b35` | Current day color (hex) |
+| `future_color` | string | `#2a2a2a` | Future days color (hex) |
+| `format` | string | `png` | Output format: `png` for download, `svg` for faster preview |
+| `html` | boolean | `false` | Return HTML page with centered image (for debugging) |
+
+**Examples:**
+
+```bash
+# Minimal URL - uses all defaults
+GET /goal
+
+# iPhone 15 Pro Max with custom dates
+GET /goal?start_date=1990-01-01&end_date=2070-01-01&width=1290&height=2796
+
+# Custom colors and spacing
+GET /goal?bg_color=%23000000&past_color=%23ff0000&offset_top=10&offset_bottom=10
+
+# Preview with SVG format (faster)
+GET /goal?width=1290&height=2796&format=svg
+
+# Full example with all parameters
+GET /goal?start_date=1990-01-01&end_date=2070-01-01&width=1290&height=2796&ring_style=1&dot_scale=1.0&show_text=1&has_widgets=0&offset_top=0&offset_bottom=0&offset_left=0&offset_right=0&bg_color=%231a1a1a&past_color=%23ffffff&current_color=%23ff6b35&future_color=%232a2a2a
 ```
-GET /goal?start_date=1990-01-01&end_date=2070-01-01&width=1290&height=2796&ring_style=1&show_text=1
-```
+
+**Notes:**
+- All parameters are optional - you can use `/goal` with no parameters for a working default wallpaper
+- Only `width` and `height` are required for device-specific output
+- Use `format=svg` for faster previews (lower quality)
+- The API returns PNG by default (high quality for wallpapers)
 
 ## Configuration
 
@@ -251,6 +261,18 @@ export APP_URL=https://untilwall.0x3654.com
 docker compose up -d --build
 ```
 
+### Local Build
+
+```bash
+# From project root
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile .
+
+# Run container
+docker run -p 3000:3000 --env-file .env 0x3654/untilwall:latest
+```
+
+⚠️ **Important:** Source files are in the `src/` directory. The build context is the project root.
+
 ## Project Structure
 
 ```
@@ -270,7 +292,7 @@ untilwall/
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-**Copyright (c) 2025 0x3654**
+**Copyright (c) 2026 0x3654**
 
 Free to use, modify, and distribute. Attribution required in copies.
 
@@ -300,15 +322,13 @@ Originally popularized by Tim Urban's ["Your Life in Weeks"](https://waitbutwhy.
 
 ## Возможности
 
-- 🎨 **Три визуальных стиля** - Заполненные круги, элегантные кольца или сердечки (для ваших дорогих сердечек ❤️)
+- 🎨 **Множество визуальных стилей** - Заполненные круги, элегантные кольца, сердечки, эмодзи, животные и многое другое (для ваших дорогих сердечек ❤️)
 - 📱 **Поддержка множества устройств** - Оптимизированные пресеты для iPhone, iPad и Mac с оверлеями под конкретные устройства
-- 🎯 **Совместимость с виджетами** - Резервируйте место для iOS виджетов сверху
+- 🎯 **Совместимость с виджетами** - Резервируйте место для iOS iPadOS виджеты
 - 🖼️ **Высокое разрешение** - Четкий вывод для Retina дисплеев в родном разрешении устройства
-- 📊 **Отслеживание прогресса** - Видите оставшиеся дни, процент жизни и текущий день
-- 🌗 **Темная тема** - Идеально для OLED экранов с высоким контрастом
+- 📊 **Отслеживание прогресса** - Видите оставшиеся дни, процент и текущий день
 - 💾 **Сохранение настроек** - Ваши предпочтения сохраняются автоматически
-- 🔗 **Интеграция с iOS Shortcuts** - Генерируйте обои прямо с iPhone
-- 📲 **Адаптивный дизайн** - Работает безупречно на мобильных и десктопах
+- 🔗 **Интеграция с iOS Shortcuts** - Обновляет обои в фоне каждый день прямо с iPhone
 
 ## Технологии
 
@@ -336,14 +356,23 @@ docker compose up -d
 ### Локальная разработка
 
 ```bash
-# Установите зависимости
-npm install
+# Клонируйте репозиторий
+git clone https://github.com/0x3654/untilwall.git
+cd untilwall
 
-# Запустите сервер разработки
-npm run dev
+# Соберите и запустите (собирает с тем же именем что в compose.yaml для приоритета локальной версии)
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
+
+# Просмотр логов
+docker compose logs -f
 
 # Откройте http://localhost:3000
+
+# Пересоберите и перезапустите после изменений в коде
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
 ```
+
+Это собирает образ с тем же именем что указан в `compose.yaml`, что обеспечивает приоритет вашей локальной сборки над удаленной.
 
 ## Конфигурация
 
@@ -459,7 +488,7 @@ env:
 - `offset_bottom` - Нижний отступ безопасной зоны (%)
 - `offset_left` - Левый отступ безопасной зоны (%)
 - `offset_right` - Правый отступ безопасной зоны (%)
-- `ring_style` - Стиль: 1 = Solid (заполненные круги), 0 = Ring (кольца), 2 = Hearts
+- `ring_style` - Стиль: 0=Ring (кольца), 1=Solid (заполненные круги), 2=Hearts (сердечки), 3=Poop, 4=Piggy, 5=Money, 6=Dachshund, 7=Cat, 8=Paw, 9=Emo, 10=Gold, 11=Pink G-Wagen
 - `show_text` - 1 = показывать текст, 0 = скрыть
 - `has_widgets` - Резервировать 15% высоты для виджетов (0 или 1)
 - `theme` - Тема (сейчас: dark)
@@ -556,7 +585,7 @@ untilwall/
 
 MIT License - см. [LICENSE](LICENSE) для деталей.
 
-**Copyright (c) 2025 0x3654**
+**Copyright (c) 2026 0x3654**
 
 Свободное использование, модификация и распространение. Требуется указание авторства в копиях.
 
