@@ -2,9 +2,12 @@ import { describe, it, expect } from '@jest/globals';
 
 describe('Basic Health Checks', () => {
   const BASE_URL = process.env.TEST_URL || 'http://localhost:3000';
+  const HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  };
 
   it('should load homepage', async () => {
-    const response = await fetch(BASE_URL);
+    const response = await fetch(BASE_URL, { headers: HEADERS });
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
   });
@@ -19,7 +22,7 @@ describe('Basic Health Checks', () => {
       show_text: '1'
     });
 
-    const response = await fetch(`${BASE_URL}/goal?${params}`);
+    const response = await fetch(`${BASE_URL}/goal?${params}`, { headers: HEADERS });
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('image/png');
@@ -45,7 +48,7 @@ describe('Basic Health Checks', () => {
         show_text: '1'
       });
 
-      const response = await fetch(`${BASE_URL}/goal?${params}`);
+      const response = await fetch(`${BASE_URL}/goal?${params}`, { headers: HEADERS });
       expect(response.status).toBe(200);
       expect(response.headers.get('content-type')).toBe('image/png');
     }
