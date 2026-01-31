@@ -10,12 +10,4 @@ services:
       - NODE_ENV=production
     volumes:
       - ./data:/app/data
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
-    restart: unless-stopped
+    restart: always
