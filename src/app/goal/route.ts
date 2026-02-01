@@ -29,17 +29,21 @@ export async function GET(request: NextRequest) {
   const offsetBottom = parseFloat(searchParams.get('offset_bottom') || '0');
   const offsetLeft = parseFloat(searchParams.get('offset_left') || '0');
   const offsetRight = parseFloat(searchParams.get('offset_right') || '0');
+  const goalTextTopOffset = parseFloat(searchParams.get('goal_text_top_offset') || '0'); // Goal text top offset (%)
   const ringStyleParam = searchParams.get('ring_style');
   const ringStyle = ringStyleParam === null ? 1 : parseInt(ringStyleParam, 10); // 1 = filled (default), 0 = ring
   const dotScaleParam = searchParams.get('dot_scale');
   const dotScale = dotScaleParam === null ? 1.0 : parseFloat(dotScaleParam); // Default scale multiplier
   const showText = searchParams.get('show_text') !== '0'; // Default true (show text), '0' = hide
+  const elapsedMode = searchParams.get('elapsed_mode') === 'true'; // Default false (until mode)
+  const goalText = searchParams.get('goal_text') || ''; // Goal text to display at top
 
   // Color customization (with defaults)
   const bgColor = searchParams.get('bg_color') || '#1a1a1a';
   const pastColor = searchParams.get('past_color') || '#ffffff';
   const currentColor = searchParams.get('current_color') || '#ff6b35';
   const futureColor = searchParams.get('future_color') || '#2a2a2a';
+  const goalColor = searchParams.get('goal_color') || currentColor; // Goal text color (default to current)
 
   // Default padding value
   const padding = 60;
@@ -77,6 +81,22 @@ export async function GET(request: NextRequest) {
 
   const percentage = ((daysPassed / totalDays) * 100).toFixed(1);
 
+  // Calculate display text based on elapsed mode
+  let displayDays: number;
+  let displayText: string;
+
+  if (elapsedMode) {
+    // Elapsed mode: calculate days from start_date to now
+    const elapsedDays = Math.floor((now.getTime() - start.getTime()) / msPerDay);
+    displayDays = Math.max(0, elapsedDays);
+    displayText = 'elapsed';
+  } else {
+    // Normal mode: days remaining
+    const daysRemaining = totalDays - daysPassed;
+    displayDays = daysRemaining;
+    displayText = 'until';
+  }
+
   // Calculate available content area (excluding safe areas)
   // Note: widgetSpace is part of the screen height, not extra
   const contentWidth = width - safeAreaLeftPx - safeAreaRightPx;
@@ -84,9 +104,9 @@ export async function GET(request: NextRequest) {
   const availableHeight = height - calendarTopY - safeAreaBottomPx;  // Space for calendar content
 
   // Calculate proportional spacing based on available height
-  const gridTopOffset = Math.round(availableHeight * 0.05);
+  const gridTopOffsetBase = Math.round(availableHeight * 0.05);
   const bottomTextHeight = Math.round(availableHeight * 0.15);
-  const calendarHeight = availableHeight - gridTopOffset - bottomTextHeight;
+  const calendarHeight = availableHeight - gridTopOffsetBase - bottomTextHeight;
 
   // Calculate circles that fit in a row (horizontally)
   const gapHorizontalPercent = 0.03; // 3% of screen width for horizontal gap
@@ -119,6 +139,20 @@ export async function GET(request: NextRequest) {
   const fontSize = Math.round(contentWidth * 0.035);
   const lineHeight = Math.round(fontSize * 1.8);
 
+  // Calculate goal text height if present (after fontSize is available)
+  // Prepare multiline goal text
+  const goalFontSize = Math.round(fontSize * 1.5);
+  const goalLineHeight = Math.round(goalFontSize * 1.3);
+  const goalLines = goalText ? goalText.split('\n') : [];
+  const goalTextHeight = goalLines.length > 0 ? Math.round(goalLineHeight * goalLines.length + fontSize * 0.5) : 0; // Space for multiline goal text + gap
+  const gridTopOffset = gridTopOffsetBase + goalTextHeight; // Add space for goal text
+
+  // Generate multiline goal text SVG
+  const goalTextSvg = goalLines.length > 0 ? goalLines.map((line, index) => {
+    const yPos = index * goalLineHeight;
+    return `<tspan x="${contentCenter}" y="${yPos}" text-anchor="middle">${line}</tspan>`;
+  }).join('\n        ') : '';
+
   // Generate SVG
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
@@ -127,6 +161,15 @@ export async function GET(request: NextRequest) {
       ${hasWidgets && widgetSpace > 0 ? `
       <!-- Widget Area (space reserved for iOS widgets) -->
       <!-- No text rendered - space reserved only -->
+      ` : ''}
+
+      ${goalLines.length > 0 ? `
+      <!-- Goal Text -->
+      <g transform="translate(0, ${widgetSpace + safeAreaTopPx + Math.round(availableHeight * 0.05) + Math.round(height * (goalTextTopOffset / 100))})">
+        <text font-family="'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Fantasy', cursive" font-size="${goalFontSize}" font-weight="bold" fill="${goalColor}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        ${goalTextSvg}
+        </text>
+      </g>
       ` : ''}
 
       <!-- Calendar Container -->
@@ -141,7 +184,7 @@ export async function GET(request: NextRequest) {
       <!-- Bottom Text (positioned between iPhone buttons) -->
       <g transform="translate(0, ${height - 220})" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
         <text x="${contentCenter}" y="0" text-anchor="middle" font-size="${fontSize}" font-weight="600">
-          <tspan fill="${currentColor}">${daysRemaining}d until</tspan>
+          <tspan fill="${currentColor}">${displayDays}d ${displayText}</tspan>
           <tspan fill="#999999"> ${percentage}%</tspan>
         </text>
       </g>

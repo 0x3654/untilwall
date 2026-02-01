@@ -23,7 +23,17 @@ LABEL stage="dependencies"
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
-COPY . ./
+COPY package.json ./
+COPY app ./app
+COPY components ./components
+COPY lib ./lib
+COPY public ./public
+COPY types ./types
+COPY next.config.js ./
+COPY next-env.d.ts ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY tsconfig.json ./
 RUN npm run build
 
 LABEL stage="builder"

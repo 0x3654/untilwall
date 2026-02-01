@@ -63,6 +63,8 @@ export default function Home() {
   const [hasWidgets, setHasWidgets] = useState(savedSettings?.hasWidgets ?? false);
   const [ringStyle, setRingStyle] = useState(savedSettings?.ringStyle ?? 1); // 1 = filled (default), 0 = ring
   const [showText, setShowText] = useState(savedSettings?.showText ?? true); // Show bottom text (default)
+  const [elapsedMode, setElapsedMode] = useState(savedSettings?.elapsedMode ?? false); // false = until, true = elapsed
+  const [goalText, setGoalText] = useState(savedSettings?.goalText || ''); // Goal text to display at top
   const [selectedDevice, setSelectedDevice] = useState(savedSettings?.deviceIndex !== undefined ? DEVICE_PRESETS[savedSettings.deviceIndex] : DEVICE_PRESETS[0]);
   const [isCustomDevice, setIsCustomDevice] = useState(false);
   const [customWidth, setCustomWidth] = useState(1290);
@@ -73,12 +75,14 @@ export default function Home() {
   const [hideOverlay, setHideOverlay] = useState(false); // Hide overlay in preview only (not saved)
   const [previewLoading, setPreviewLoading] = useState(false); // Preview loading state
   const [stats, setStats] = useState<any>(null); // Stats data
+  const [dateError, setDateError] = useState<string | null>(null); // Date validation error
 
   // Color customization
   const [bgColor, setBgColor] = useState(savedSettings?.bgColor ?? '#1a1a1a');
   const [pastColor, setPastColor] = useState(savedSettings?.pastColor ?? '#ffffff');
   const [currentColor, setCurrentColor] = useState(savedSettings?.currentColor ?? '#ff6b35');
   const [futureColor, setFutureColor] = useState(savedSettings?.futureColor ?? '#2a2a2a');
+  const [goalColor, setGoalColor] = useState(savedSettings?.goalColor ?? savedSettings?.currentColor ?? '#ff6b35'); // Default to currentColor
 
   // Scale per style
   const [dotScale, setDotScale] = useState(savedSettings?.dotScale ?? 1.0);
@@ -153,6 +157,7 @@ export default function Home() {
   const [offsetBottom, setOffsetBottom] = useState(savedSettings?.offsetBottom ?? defaultSafeArea.bottom ?? 0);
   const [offsetLeft, setOffsetLeft] = useState(savedSettings?.offsetLeft ?? defaultSafeArea.left ?? 0);
   const [offsetRight, setOffsetRight] = useState(savedSettings?.offsetRight ?? defaultSafeArea.right ?? 0);
+  const [goalTextTopOffset, setGoalTextTopOffset] = useState(savedSettings?.goalTextTopOffset ?? 0); // Goal text top offset (%)
 
   // Save settings to cookie whenever any parameter changes
   useEffect(() => {
@@ -165,11 +170,14 @@ export default function Home() {
       ringStyle,
       dotScale,
       showText,
+      elapsedMode,
+      goalText,
       offsetTop, offsetBottom, offsetLeft, offsetRight,
-      bgColor, pastColor, currentColor, futureColor
+      goalTextTopOffset,
+      bgColor, pastColor, currentColor, futureColor, goalColor
     };
     saveSettingsToCookie(settings);
-  }, [selectedDevice, startDay, startMonth, startYear, endDay, endMonth, endYear, hasWidgets, ringStyle, dotScale, showText, offsetTop, offsetBottom, offsetLeft, offsetRight, bgColor, pastColor, currentColor, futureColor]);
+  }, [selectedDevice, startDay, startMonth, startYear, endDay, endMonth, endYear, hasWidgets, ringStyle, dotScale, showText, elapsedMode, goalText, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, bgColor, pastColor, currentColor, futureColor, goalColor]);
 
   // Update offsets when device or widgets change
   useEffect(() => {
@@ -207,6 +215,20 @@ export default function Home() {
   const startDate = dmyToIso(startDay, startMonth, startYear);
   const endDate = dmyToIso(endDay, endMonth, endYear);
 
+  // Validate dates: start date should not be after end date
+  useEffect(() => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (start.getTime() > end.getTime()) {
+      setDateError('Start date must be before end date. Please swap the dates or use "Elapsed" mode.');
+    } else {
+      setDateError(null);
+    }
+  }, [startDate, endDate]);
+
   // Update preview image when parameters change (with debounce)
   useEffect(() => {
     setPreviewLoading(true);
@@ -217,7 +239,11 @@ export default function Home() {
         end_date: endDate,
         has_widgets: hasWidgets.toString(),
         ring_style: ringStyle.toString(),
+        elapsed_mode: elapsedMode.toString(),
         show_text: showText ? '1' : '0',
+        goal_text: goalText,
+        goal_color: goalColor,
+        goal_text_top_offset: goalTextTopOffset.toString(),
         width: currentDevice.width.toString(),
         height: currentDevice.height.toString(),
         offset_top: offsetTop.toString(),
@@ -243,7 +269,7 @@ export default function Home() {
     }, 300); // 300ms debounce (faster response)
 
     return () => clearTimeout(timeoutId);
-  }, [startDate, endDate, hasWidgets, ringStyle, showText, selectedDevice, isCustomDevice, customWidth, customHeight, offsetTop, offsetBottom, offsetLeft, offsetRight, dotScale, bgColor, pastColor, currentColor, futureColor]);
+  }, [startDate, endDate, hasWidgets, ringStyle, showText, elapsedMode, goalText, selectedDevice, isCustomDevice, customWidth, customHeight, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, dotScale, bgColor, pastColor, currentColor, futureColor, goalColor]);
 
   const shareUrl = async () => {
     const params = new URLSearchParams({
@@ -356,6 +382,20 @@ export default function Home() {
         <div className="grid lg:grid-cols-2 gap-4 md:gap-8 max-w-7xl mx-auto items-start">
           {/* Controls */}
           <div className="rounded-2xl shadow-xl p-4 md:p-6 space-y-4 md:space-y-6" style={{ backgroundColor: '#2a2a2a' }}>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-white">
+                Goal
+              </label>
+              <textarea
+                value={goalText}
+                onChange={(e) => setGoalText(e.target.value)}
+                placeholder="Set your goal"
+                rows={3}
+                className="w-full px-3 py-2 rounded-lg text-white focus:outline-none resize-none"
+                style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
+              />
+            </div>
+
             <DateInput
               label="Start Date (DD.MM.YYYY)"
               day={startDay}
@@ -376,7 +416,13 @@ export default function Home() {
               onYearChange={setEndYear}
             />
 
-            <div className="flex gap-4">
+            {dateError && (
+              <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'rgba(255, 107, 53, 0.1)', border: '1px solid #ff6b35' }}>
+                <p style={{ color: '#ff6b35' }}>{dateError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-4 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer text-white">
                 <input
                   type="checkbox"
@@ -397,6 +443,32 @@ export default function Home() {
                 />
                 <span className="text-sm font-medium">bottom text</span>
               </label>
+              <div className={`flex items-center gap-4 ${showText ? '' : 'opacity-50'}`} style={{ transition: 'opacity 0.2s' }}>
+                <label className={`flex items-center gap-2 ${showText ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                  <input
+                    type="radio"
+                    name="elapsedMode"
+                    checked={!elapsedMode}
+                    onChange={() => setElapsedMode(false)}
+                    className="w-4 h-4"
+                    disabled={!showText}
+                    style={{ accentColor: '#ff6b35' }}
+                  />
+                  <span className="text-sm text-white">Until</span>
+                </label>
+                <label className={`flex items-center gap-2 ${showText ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                  <input
+                    type="radio"
+                    name="elapsedMode"
+                    checked={elapsedMode}
+                    onChange={() => setElapsedMode(true)}
+                    className="w-4 h-4"
+                    disabled={!showText}
+                    style={{ accentColor: '#ff6b35' }}
+                  />
+                  <span className="text-sm text-white">Elapsed</span>
+                </label>
+              </div>
             </div>
 
             <div>
@@ -486,6 +558,11 @@ export default function Home() {
                       <input type="color" value={futureColor} onChange={(e) => setFutureColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
                       <input type="text" value={futureColor} onChange={(e) => setFutureColor(e.target.value)} className="flex-1 px-2 py-1 rounded text-white text-sm" style={{ backgroundColor: '#1a1a1a' }} />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-white w-20">Goal</label>
+                      <input type="color" value={goalColor} onChange={(e) => setGoalColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
+                      <input type="text" value={goalColor} onChange={(e) => setGoalColor(e.target.value)} className="flex-1 px-2 py-1 rounded text-white text-sm" style={{ backgroundColor: '#1a1a1a' }} />
+                    </div>
                   </div>
                 </div>
 
@@ -496,56 +573,70 @@ export default function Home() {
                       <label className="block text-xs text-lc-percent-gray mb-1">Top</label>
                       <input
                         type="number"
-                        inputMode="decimal"
-                        value={offsetTop}
-                        onChange={(e) => setOffsetTop(parseFloat(e.target.value) || 0)}
+                        inputMode="numeric"
+                        value={offsetTop === 0 ? '' : offsetTop}
+                        onChange={(e) => setOffsetTop(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1 rounded text-white text-sm focus:outline-none"
                         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                        min={0}
-                        max={50}
-                        step={0.1}
+                        min={-100}
+                        max={100}
+                        step={1}
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-lc-percent-gray mb-1">Bottom</label>
                       <input
                         type="number"
-                        inputMode="decimal"
-                        value={offsetBottom}
-                        onChange={(e) => setOffsetBottom(parseFloat(e.target.value) || 0)}
+                        inputMode="numeric"
+                        value={offsetBottom === 0 ? '' : offsetBottom}
+                        onChange={(e) => setOffsetBottom(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1 rounded text-white text-sm focus:outline-none"
                         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                        min={0}
-                        max={50}
-                        step={0.1}
+                        min={-100}
+                        max={100}
+                        step={1}
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-lc-percent-gray mb-1">Left</label>
                       <input
                         type="number"
-                        inputMode="decimal"
-                        value={offsetLeft}
-                        onChange={(e) => setOffsetLeft(parseFloat(e.target.value) || 0)}
+                        inputMode="numeric"
+                        value={offsetLeft === 0 ? '' : offsetLeft}
+                        onChange={(e) => setOffsetLeft(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1 rounded text-white text-sm focus:outline-none"
                         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                        min={0}
-                        max={50}
-                        step={0.1}
+                        min={-100}
+                        max={100}
+                        step={1}
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-lc-percent-gray mb-1">Right</label>
                       <input
                         type="number"
-                        inputMode="decimal"
-                        value={offsetRight}
-                        onChange={(e) => setOffsetRight(parseFloat(e.target.value) || 0)}
+                        inputMode="numeric"
+                        value={offsetRight === 0 ? '' : offsetRight}
+                        onChange={(e) => setOffsetRight(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-1 rounded text-white text-sm focus:outline-none"
                         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                        min={0}
-                        max={50}
-                        step={0.1}
+                        min={-100}
+                        max={100}
+                        step={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-lc-percent-gray mb-1">Goal top</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={goalTextTopOffset === 0 ? '' : goalTextTopOffset}
+                        onChange={(e) => setGoalTextTopOffset(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                        className="w-full px-2 py-1 rounded text-white text-sm focus:outline-none"
+                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                        min={-100}
+                        max={100}
+                        step={1}
                       />
                     </div>
                   </div>
@@ -806,7 +897,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="mt-8 py-6 text-center" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="container mx-auto px-4 space-y-2">
-          <p className="text-sm" style={{ color: '#999999' }}>
+          <p className="text-sm flex flex-wrap items-center justify-center gap-2" style={{ color: '#999999' }}>
             <a
               href="https://github.com/0x3654/untilwall"
               target="_blank"
@@ -816,6 +907,7 @@ export default function Home() {
             >
               Opensource
             </a>
+            <span style={{ color: '#666666' }}>|</span>
             <a
               href="https://github.com/0x3654"
               target="_blank"
@@ -827,6 +919,7 @@ export default function Home() {
             </a>
             {stats && stats.uniqueVisitors > 0 && (
               <>
+                <span style={{ color: '#666666' }}>|</span>
                 <span className="text-xs">{stats.uniqueVisitors} 🍪</span>
                 <span className="text-xs">{stats.imageGenerations} 🖼</span>
                 {stats.devices && Object.keys(stats.devices).length > 0 && (
@@ -844,6 +937,16 @@ export default function Home() {
                 )}
               </>
             )}
+            <span style={{ color: '#666666' }}>|</span>
+            <a
+              href="https://thelifecalendar.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline transition-colors"
+              style={{ color: '#999999' }}
+            >
+              Inspired by The Life Calendar
+            </a>
           </p>
         </div>
       </footer>

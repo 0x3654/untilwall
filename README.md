@@ -54,7 +54,7 @@ git clone https://github.com/0x3654/untilwall.git
 cd untilwall
 
 # Build and start (builds with same name as compose.yaml for local priority)
-docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile src/ && docker compose up -d
 
 # View logs
 docker compose logs -f
@@ -62,7 +62,7 @@ docker compose logs -f
 # Open http://localhost:3000
 
 # Rebuild and restart after code changes
-docker build -t 0x3654/untilwall:latest -f src/Dockerfile . && docker compose up -d
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile src/ && docker compose up -d
 ```
 
 This builds the image with the same name as specified in `compose.yaml`, ensuring your locally built image takes priority over the remote one.
@@ -264,14 +264,14 @@ docker compose up -d --build
 ### Local Build
 
 ```bash
-# From project root
-docker build -t 0x3654/untilwall:latest -f src/Dockerfile .
+# From project root - build context is src/
+docker build -t 0x3654/untilwall:latest -f src/Dockerfile src/
 
 # Run container
 docker run -p 3000:3000 --env-file .env 0x3654/untilwall:latest
 ```
 
-⚠️ **Important:** Source files are in the `src/` directory. The build context is the project root.
+⚠️ **Important:** Source files are in the `src/` directory. The build context is `src/`.
 
 ## Project Structure
 
