@@ -807,9 +807,6 @@ export default function Home() {
       <footer className="mt-8 py-6 text-center" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="container mx-auto px-4 space-y-2">
           <p className="text-sm" style={{ color: '#999999' }}>
-            © {new Date().getFullYear()} untilwall
-          </p>
-          <p className="text-sm flex flex-wrap items-center justify-center gap-3" style={{ color: '#999999' }}>
             <a
               href="https://github.com/0x3654/untilwall"
               target="_blank"
@@ -826,7 +823,7 @@ export default function Home() {
               className="hover:underline transition-colors"
               style={{ color: '#ff6b35' }}
             >
-              0x3654
+              Made by 0x3654
             </a>
             {stats && stats.uniqueVisitors > 0 && (
               <>
