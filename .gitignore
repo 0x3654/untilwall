@@ -5,7 +5,6 @@ node_modules
 
 # Testing
 /coverage
-.data/
 
 # Next.js
 /.next/
@@ -33,11 +32,9 @@ yarn-error.log*
 .env
 
 # Stats data
-/.data
+/.data/*
+!/.data/.gitkeep
 /src/data
-
-# Vercel
-.vercel
 
 # TypeScript
 *.tsbuildinfo
@@ -52,8 +49,6 @@ yarn-error.log*
 # Claude
 .claude
 CLAUDE_CONTEXT.md
-PROJECT_STRUCTURE.md
-DEPLOYMENT.md
 
 # Ansible
 .ansible
