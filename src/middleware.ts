@@ -6,47 +6,27 @@ const rateLimit = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = 60; // запросов в минуту с одного IP
 const WINDOW_MS = 60 * 1000; // 1 минута
 
-// Паттерны плохих ботов (блокируем)
-const BAD_BOTS = [
-  /bot/i,
-  /crawler/i,
-  /spider/i,
-  /scraper/i,
-  /curl/i,
-  /wget/i,
-  /python/i,
-  /java/i,
-  /go-http-client/i,
-  /node/i,
-  /axios/i,
-  /httpie/i,
-  /lwp/i,
-  /perl/i,
-  /ruby/i,
-  /php/i,
-  /nikto/i,
-  /sqlmap/i,
-  /nmap/i,
-  /metasploit/i,
+// Блокируем только явные инструменты атак
+const ATTACK_TOOLS = [
+  /^nikto\//i,
+  /^sqlmap/i,
+  /^nmap/i,
+  /^metasploit/i,
   /.*scanner.*/i,
   /.*harvest.*/i,
   /.*extract.*/i,
-];
-
-// Хорошие боты (разрешаем)
-const GOOD_BOTS = [
-  /googlebot/i,
-  /bingbot/i,
-  /slurp/i, // Yahoo
-  /duckduckbot/i,
-  /baiduspider/i,
-  /yandexbot/i,
-  /facebookexternalhit/i,
-  /twitterbot/i,
-  /linkedinbot/i,
-  /whatsapp/i,
-  /telegrambot/i,
-  /applebot/i,
+  /^masscan/i,
+  /^zmap/i,
+  /^openvas/i,
+  /^ Nessus/i,
+  /^gobuster/i,
+  /^dirb/i,
+  /^dirbuster/i,
+  /^wfuzz/i,
+  /^hydra/i,
+  /^medusa/i,
+  /^john/i,
+  /^hashcat/i,
 ];
 
 export function middleware(request: NextRequest) {
@@ -56,17 +36,11 @@ export function middleware(request: NextRequest) {
 
   const userAgent = request.headers.get('user-agent') || '';
 
-  // Сначала проверяем хорошие боты (разрешаем)
-  const isGoodBot = GOOD_BOTS.some(pattern => pattern.test(userAgent));
-  if (isGoodBot) {
-    return NextResponse.next();
-  }
-
-  // Проверяем плохие боты
-  const isBadBot = BAD_BOTS.some(pattern => pattern.test(userAgent));
-  if (isBadBot) {
-    console.log(`Заблокирован бот: ${userAgent} с ${ip}`);
-    return new Response('Bot access denied', { status: 403 });
+  // Блокируем только инструменты атак
+  const isAttackTool = ATTACK_TOOLS.some(pattern => pattern.test(userAgent));
+  if (isAttackTool) {
+    console.log(`Заблокирован атакующий инструмент: ${userAgent} с ${ip}`);
+    return new Response('Access denied', { status: 403 });
   }
 
   // Лимитирование запросов
