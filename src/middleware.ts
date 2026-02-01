@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Простая лимитировка в памяти (сбрасывается при перезапуске)
+// Simple in-memory rate limiting (resets on restart)
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 60; // запросов в минуту с одного IP
-const WINDOW_MS = 60 * 1000; // 1 минута
+const RATE_LIMIT = 60; // requests per minute per IP
+const WINDOW_MS = 60 * 1000; // 1 minute
 
-// Блокируем только явные инструменты атак
+// Block only explicit attack tools
 const ATTACK_TOOLS = [
   /^nikto\//i,
   /^sqlmap/i,
@@ -36,25 +36,25 @@ export function middleware(request: NextRequest) {
 
   const userAgent = request.headers.get('user-agent') || '';
 
-  // Блокируем только инструменты атак
+  // Block only attack tools
   const isAttackTool = ATTACK_TOOLS.some(pattern => pattern.test(userAgent));
   if (isAttackTool) {
-    console.log(`Заблокирован атакующий инструмент: ${userAgent} с ${ip}`);
+    console.log(`Blocked attack tool: ${userAgent} from ${ip}`);
     return new Response('Access denied', { status: 403 });
   }
 
-  // Лимитирование запросов
+  // Rate limiting
   const now = Date.now();
   const record = rateLimit.get(ip);
 
   if (!record || now > record.resetTime) {
-    // Первый запрос или окно истекло
+    // First request or window expired
     rateLimit.set(ip, { count: 1, resetTime: now + WINDOW_MS });
     return NextResponse.next();
   }
 
   if (record.count >= RATE_LIMIT) {
-    console.log(`Превышен лимит: ${ip} (${record.count} запросов)`);
+    console.log(`Rate limit exceeded: ${ip} (${record.count} requests)`);
     return new Response('Too many requests', { status: 429 });
   }
 
@@ -62,7 +62,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Очистка старых записей
+// Cleanup old entries
 setInterval(() => {
   const now = Date.now();
   for (const [ip, record] of rateLimit.entries()) {
@@ -70,7 +70,7 @@ setInterval(() => {
       rateLimit.delete(ip);
     }
   }
-}, 60000); // Каждую минуту
+}, 60000); // Every minute
 
 export const config = {
   matcher: [
