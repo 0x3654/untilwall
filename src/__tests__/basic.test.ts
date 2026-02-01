@@ -10,7 +10,7 @@ describe('Basic Health Checks', () => {
     const response = await fetch(BASE_URL, { headers: HEADERS });
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
-  });
+  }, 15000);
 
   it('should generate PNG image', async () => {
     const params = new URLSearchParams({

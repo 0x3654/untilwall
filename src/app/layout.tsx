@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "Until Wall",
   description: "Generate personalized life calendar wallpapers for your Apple devices",
   robots: "noindex, nofollow, nosnippet, noarchive, notranslate, noimageindex",
+  icons: {
+    icon: "/icon.svg?v=2",
+    apple: "/icon.svg?v=2",
+  },
 };
 
 export default function RootLayout({
