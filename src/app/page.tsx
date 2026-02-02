@@ -100,12 +100,6 @@ export default function Home() {
     return 1.0; // Default for others
   };
 
-  // Update scale when style changes to default value for that style
-  useEffect(() => {
-    const defaultScale = getDefaultScaleForStyle(ringStyle);
-    setDotScale(defaultScale);
-  }, [ringStyle]);
-
   // Track visitor on page load (client-side)
   useEffect(() => {
     const trackVisit = async () => {
@@ -512,7 +506,7 @@ export default function Home() {
 
             <div>
               <label className="block text-sm font-medium mb-2 text-white">
-                Scale ({dotScale.toFixed(1)}x)
+                Scale ({dotScale.toFixed(1)}x) <span className="text-xs text-lc-percent-gray font-normal">(default: {getDefaultScaleForStyle(ringStyle)}x for this style)</span>
               </label>
               <input
                 type="range"

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import sharp from 'sharp';
 import { trackVisitor, trackImageGeneration } from '@/lib/stats';
+import { svgCache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,30 @@ export async function GET(request: NextRequest) {
   const currentColor = searchParams.get('current_color') || '#ff6b35';
   const futureColor = searchParams.get('future_color') || '#2a2a2a';
   const goalColor = searchParams.get('goal_color') || currentColor; // Goal text color (default to current)
+
+  // Create cache key from all parameters (except format/html)
+  const cacheKey = new URLSearchParams();
+  for (const [key, value] of searchParams.entries()) {
+    if (key !== 'format' && key !== 'html' && key !== 't') {
+      cacheKey.set(key, value);
+    }
+  }
+
+  // Check cache for SVG format only (PNGs are too large to cache in memory)
+  if (format === 'svg') {
+    const cached = svgCache.get(cacheKey);
+    if (cached) {
+      return new Response(cached, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+          'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
+          'X-Cache': 'HIT',
+          'X-Robots-Tag': 'noindex, nofollow, nosnippet',
+          ...responseHeaders,
+        },
+      });
+    }
+  }
 
   // Default padding value
   const padding = 60;
@@ -153,10 +178,29 @@ export async function GET(request: NextRequest) {
     return `<tspan x="${contentCenter}" y="${yPos}" text-anchor="middle">${line}</tspan>`;
   }).join('\n        ') : '';
 
+  // Generate SVG symbols for circle styles (ringStyle 0 or 1) to reuse and reduce size
+  const useSymbols = ringStyle === 0 || ringStyle === 1;
+  const symbols = useSymbols ? `
+      <defs>
+        <symbol id="past-circle">
+          ${ringStyle === 0
+            ? `<circle cx="${finalCircleSize / 2}" cy="${finalCircleSize / 2}" r="${finalCircleSize / 2 - finalCircleSize * 0.075}" fill="none" stroke="${pastColor}" stroke-width="${finalCircleSize * 0.15}"/>`
+            : `<circle cx="${finalCircleSize / 2}" cy="${finalCircleSize / 2}" r="${finalCircleSize / 2}" fill="${pastColor}"/>`
+          }
+        </symbol>
+        <symbol id="current-circle">
+          <circle cx="${finalCircleSize / 2}" cy="${finalCircleSize / 2}" r="${finalCircleSize / 2}" fill="${currentColor}"/>
+        </symbol>
+        <symbol id="future-circle">
+          <circle cx="${finalCircleSize / 2}" cy="${finalCircleSize / 2}" r="${finalCircleSize / 2}" fill="${futureColor}"/>
+        </symbol>
+      </defs>` : '';
+
   // Generate SVG
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
       <rect width="${width}" height="${height}" fill="${bgColor}"/>
+      ${symbols}
 
       ${hasWidgets && widgetSpace > 0 ? `
       <!-- Widget Area (space reserved for iOS widgets) -->
@@ -303,20 +347,26 @@ export async function GET(request: NextRequest) {
         const offsetY = (baseSize - svgHeight) / 2;
         shape = `<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 200 200" x="${x + offsetX}" y="${y + offsetY}"><path d="${pinkGwagenPath}" fill="${iconColor}"/></svg>`;
       } else if (isPast) {
-        if (ringStyle === 0) {
-          // Ring style: bg color circle with past color outline (ring effect)
-          const r = renderSize / 2;
-          const strokeWidth = renderSize * 0.15;
-          const innerR = r - strokeWidth / 2;
-          shape = `<circle cx="${x + r}" cy="${y + r}" r="${innerR}" fill="${bgColor}" stroke="${pastColor}" stroke-width="${strokeWidth}"/>`;
+        // For simple circle styles (0 and 1), use <use> to reference defined symbols
+        if (ringStyle === 0 || ringStyle === 1) {
+          shape = `<use href="#past-circle" x="${x}" y="${y}" width="${baseSize}" height="${baseSize}"/>`;
         } else {
-          // Default style (ringStyle = 1): filled past color circles
           shape = `<circle cx="${x + renderSize / 2}" cy="${y + renderSize / 2}" r="${renderSize / 2}" fill="${pastColor}"/>`;
         }
       } else if (isCurrent) {
-        shape = `<circle cx="${x + renderSize / 2}" cy="${y + renderSize / 2}" r="${renderSize / 2}" fill="${currentColor}"/>`;
+        // For simple circle styles (0 and 1), use <use> to reference defined symbols
+        if (ringStyle === 0 || ringStyle === 1) {
+          shape = `<use href="#current-circle" x="${x}" y="${y}" width="${baseSize}" height="${baseSize}"/>`;
+        } else {
+          shape = `<circle cx="${x + renderSize / 2}" cy="${y + renderSize / 2}" r="${renderSize / 2}" fill="${currentColor}"/>`;
+        }
       } else {
-        shape = `<circle cx="${x + renderSize / 2}" cy="${y + renderSize / 2}" r="${renderSize / 2}" fill="${futureColor}"/>`;
+        // For simple circle styles (0 and 1), use <use> to reference defined symbols
+        if (ringStyle === 0 || ringStyle === 1) {
+          shape = `<use href="#future-circle" x="${x}" y="${y}" width="${baseSize}" height="${baseSize}"/>`;
+        } else {
+          shape = `<circle cx="${x + renderSize / 2}" cy="${y + renderSize / 2}" r="${renderSize / 2}" fill="${futureColor}"/>`;
+        }
       }
 
       svg += shape;
@@ -335,10 +385,14 @@ export async function GET(request: NextRequest) {
 
   // Return SVG directly for faster preview (if format=svg)
   if (format === 'svg') {
+    // Store in cache for future requests
+    svgCache.set(cacheKey, svg);
+
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
+        'X-Cache': 'MISS',
         'X-Robots-Tag': 'noindex, nofollow, nosnippet',
         ...responseHeaders,
       },
