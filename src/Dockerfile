@@ -13,8 +13,8 @@ FROM base AS deps
 # Install system dependencies only
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json* ./
-# Prefer offline for faster builds, clean install
-RUN npm ci --prefer-offline && \
+# Install dependencies (use install instead of ci to update lock file if needed)
+RUN npm install && \
     npm cache clean --force
 
 LABEL stage="dependencies"
@@ -48,7 +48,7 @@ ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=256"
 
 # Install runtime dependencies and create user in single layer
-RUN apk add --no-cache fontconfig ttf-dejavu && \
+RUN apk add --no-cache fontconfig ttf-dejavu ffmpeg exiftool && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs nextjs
 

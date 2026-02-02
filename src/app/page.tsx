@@ -76,6 +76,7 @@ export default function Home() {
   const [previewLoading, setPreviewLoading] = useState(false); // Preview loading state
   const [stats, setStats] = useState<any>(null); // Stats data
   const [dateError, setDateError] = useState<string | null>(null); // Date validation error
+  const [videoUrl, setVideoUrl] = useState<string | null>(null); // Video URL for Live Photo preview
 
   // Color customization
   const [bgColor, setBgColor] = useState(savedSettings?.bgColor ?? '#1a1a1a');
@@ -233,7 +234,7 @@ export default function Home() {
   useEffect(() => {
     setPreviewLoading(true);
 
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       const params = new URLSearchParams({
         start_date: startDate,
         end_date: endDate,
@@ -255,17 +256,41 @@ export default function Home() {
         past_color: pastColor,
         current_color: currentColor,
         future_color: futureColor,
-        format: 'svg', // Use SVG for faster preview!
-        t: Date.now().toString(), // Prevent caching
       });
-      const url = `/goal?${params.toString()}`;
-      setImageUrl(url);
 
-      // Set loading to false when image loads
-      const img = new Image();
-      img.onload = () => setPreviewLoading(false);
-      img.onerror = () => setPreviewLoading(false); // Also hide on error
-      img.src = url;
+      if (ringStyle === 101) {
+        // Live Photo style - fetch video and static image
+        const liveUrl = `/api/live?${params.toString()}`;
+
+        console.log('Loading Live Photo from:', liveUrl);
+        try {
+          const response = await fetch(liveUrl);
+          const data = await response.json();
+
+          console.log('Live Photo loaded, video size:', data.mp4?.length);
+
+          // Set video URL from base64
+          setVideoUrl(data.mp4);
+          setImageUrl(data.png);
+          setPreviewLoading(false); // Video loaded
+        } catch (error) {
+          console.error('Failed to load live photo:', error);
+          setPreviewLoading(false);
+        }
+      } else {
+        // Regular style - load SVG image
+        params.set('format', 'svg');
+        params.set('t', Date.now().toString()); // Prevent caching
+        const url = `/goal?${params.toString()}`;
+        setImageUrl(url);
+        setVideoUrl(null); // Reset video
+
+        // Set loading to false when image loads
+        const img = new Image();
+        img.onload = () => setPreviewLoading(false);
+        img.onerror = () => setPreviewLoading(false); // Also hide on error
+        img.src = url;
+      }
     }, 300); // 300ms debounce (faster response)
 
     return () => clearTimeout(timeoutId);
@@ -486,7 +511,8 @@ export default function Home() {
                    ringStyle === 8 ? ' Leave your mark' :
                    ringStyle === 9 ? ' Please don\'t die' :
                    ringStyle === 10 ? ' Stability' :
-                   ringStyle === 11 ? ' Only for Koza-dereza! Exclusively' : '⚪️ Solid circles'}
+                   ringStyle === 11 ? ' Only for Koza-dereza! Exclusively' :
+                   ringStyle === 101 ? ' 💫 Live Photo with pulse!' : '⚪️ Solid circles'}
                 </span>
               </label>
               <select
@@ -507,6 +533,7 @@ export default function Home() {
                 <option value="9">👻 Ghost</option>
                 <option value="10">🥇 Gold</option>
                 <option value="11">🚙 Pink G-Wagen</option>
+                <option value="101">💫 Live Photo (Impulse)</option>
               </select>
             </div>
 
@@ -782,18 +809,36 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    border: '1px solid #ffffff',
-                    borderRadius: '16px',
-                    opacity: previewLoading ? 0.3 : 1,
-                  }}
-                />
+                {videoUrl ? (
+                  <video
+                    src={videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      border: '1px solid #ffffff',
+                      borderRadius: '16px',
+                      opacity: previewLoading ? 0.3 : 1,
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      border: '1px solid #ffffff',
+                      borderRadius: '16px',
+                      opacity: previewLoading ? 0.3 : 1,
+                    }}
+                  />
+                )}
                 {!hideOverlay && (() => {
                   const overlay = getOverlayImage();
                   return overlay ? (
