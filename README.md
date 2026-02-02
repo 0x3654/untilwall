@@ -8,6 +8,23 @@ Life calendar wallpaper generator for Apple devices (iPhone, iPad, Mac).
 
 Generate personalized life calendar wallpapers that visualize your life journey with beautiful circles - each representing one **day** of your life.
 
+## Preview
+
+<table>
+  <tr>
+    <td><img src="screenshots/IMG_0905.PNG" alt="Goal Feature" width="250"/></td>
+    <td><img src="screenshots/IMG_0906.PNG" alt="Visual Styles" width="250"/></td>
+    <td><img src="screenshots/IMG_0907.PNG" alt="Device Customization" width="250"/></td>
+    <td><img src="screenshots/IMG_0938.PNG" alt="Widget Support" width="250"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Goal Feature</b><br/><small>Multiline text support</small></td>
+    <td align="center"><b>Visual Styles</b><br/><small>Multiple styles available</small></td>
+    <td align="center"><b>Device Customization</b><br/><small>iPhone, iPad, Mac</small></td>
+    <td align="center"><b>Widget Support</b><br/><small>Reserve space for widgets</small></td>
+  </tr>
+</table>
+
 ---
 
 <a name="english"></a>
@@ -319,6 +336,23 @@ Originally popularized by Tim Urban's ["Your Life in Weeks"](https://waitbutwhy.
 Генератор календарных обоев для устройств Apple (iPhone, iPad, Mac).
 
 Создавайте персонализированные календарные обоева, которые визуализируют ваш жизненный путь красивыми кругами — каждый представляет один **день** вашей жизни.
+
+## Превью
+
+<table>
+  <tr>
+    <td><img src="screenshots/IMG_0905.PNG" alt="Функция Goal" width="250"/></td>
+    <td><img src="screenshots/IMG_0906.PNG" alt="Визуальные стили" width="250"/></td>
+    <td><img src="screenshots/IMG_0907.PNG" alt="Кастомизация устройств" width="250"/></td>
+    <td><img src="screenshots/IMG_0938.PNG" alt="Поддержка виджетов" width="250"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Функция Goal</b><br/><small>Многострочный текст</small></td>
+    <td align="center"><b>Визуальные стили</b><br/><small>Множество стилей</small></td>
+    <td align="center"><b>Кастомизация</b><br/><small>iPhone, iPad, Mac</small></td>
+    <td align="center"><b>Виджеты</b><br/><small>Место для виджетов</small></td>
+  </tr>
+</table>
 
 ## Возможности
 
