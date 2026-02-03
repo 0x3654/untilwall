@@ -172,10 +172,20 @@ export async function GET(request: NextRequest) {
   const goalTextHeight = goalLines.length > 0 ? Math.round(goalLineHeight * goalLines.length + fontSize * 0.5) : 0; // Space for multiline goal text + gap
   const gridTopOffset = gridTopOffsetBase + goalTextHeight; // Add space for goal text
 
+  // Escape HTML entities in text for SVG
+  const escapeHtml = (text: string): string => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   // Generate multiline goal text SVG
   const goalTextSvg = goalLines.length > 0 ? goalLines.map((line, index) => {
     const yPos = index * goalLineHeight;
-    return `<tspan x="${contentCenter}" y="${yPos}" text-anchor="middle">${line}</tspan>`;
+    return `<tspan x="${contentCenter}" y="${yPos}" text-anchor="middle">${escapeHtml(line)}</tspan>`;
   }).join('\n        ') : '';
 
   // Generate SVG symbols for circle styles (ringStyle 0 or 1) to reuse and reduce size
@@ -210,7 +220,7 @@ export async function GET(request: NextRequest) {
       ${goalLines.length > 0 ? `
       <!-- Goal Text -->
       <g transform="translate(0, ${widgetSpace + safeAreaTopPx + Math.round(availableHeight * 0.05) + Math.round(height * (goalTextTopOffset / 100))})">
-        <text font-family="'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Fantasy', cursive" font-size="${goalFontSize}" font-weight="bold" fill="${goalColor}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        <text font-family="'Custom', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Fantasy', cursive, sans-serif" font-size="${goalFontSize}" font-weight="bold" fill="${goalColor}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         ${goalTextSvg}
         </text>
       </g>

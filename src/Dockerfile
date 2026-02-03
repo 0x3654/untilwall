@@ -48,7 +48,7 @@ ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=256"
 
 # Install runtime dependencies and create user in single layer
-RUN apk add --no-cache fontconfig ttf-dejavu && \
+RUN apk add --no-cache fontconfig ttf-dejavu font-noto-emoji && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs nextjs
 
