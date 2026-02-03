@@ -97,7 +97,9 @@ export async function GET(request: NextRequest) {
 
   const msPerDay = 24 * 60 * 60 * 1000;
   const totalDays = Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1;
-  const daysPassed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / msPerDay));
+  // Include first day: if now >= start, count start as day 1 (not day 0)
+  const rawDaysPassed = Math.floor((now.getTime() - start.getTime()) / msPerDay);
+  const daysPassed = rawDaysPassed >= 0 ? rawDaysPassed + 1 : 0;
 
   let currentDayIndex = -1;
   if (daysPassed > 0 && daysPassed < totalDays) {
