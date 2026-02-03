@@ -54,17 +54,98 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push
+      - name: Build image (local only, not pushed yet)
         uses: docker/build-push-action@v5
         with:
           context: ./src
           platforms: ${{ matrix.platform }}
-          push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          load: true  # Load to local docker for testing
+          tags: ${{ env.DOCKER_IMAGE }}:test-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+
+      - name: Test amd64 container
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          echo "=== Testing amd64 container ==="
+          docker run -d --name untilwall-test -p 3000:3000 \
+            -e NODE_ENV=production \
+            ${{ env.DOCKER_IMAGE }}:test-amd64
+
+          # Wait for healthcheck
+          for i in {1..30}; do
+            if docker ps | grep -q "untilwall-test.*healthy"; then
+              echo "✅ Container is healthy!"
+              break
+            fi
+            sleep 2
+          done
+
+          # Show logs
+          echo "=== Container logs ==="
+          docker logs untilwall-test
+
+          # Test endpoints
+          curl -f http://localhost:3000/api/health || exit 1
+          echo "✅ Health endpoint OK"
+
+          curl -f "http://localhost:3000/goal?start_date=2000-01-01&end_date=2024-01-01&width=1170&height=2532&format=svg" || exit 1
+          echo "✅ Goal endpoint OK"
+
+          docker stop untilwall-test
+          docker rm untilwall-test
+
+      - name: Set up QEMU (for arm64 testing)
+        if: matrix.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Test arm64 container (emulation)
+        if: matrix.platform == 'linux/arm64'
+        run: |
+          echo "=== Testing arm64 container (with emulation) ==="
+          docker run -d --name untilwall-test-arm --platform linux/arm64 -p 3001:3000 \
+            -e NODE_ENV=production \
+            ${{ env.DOCKER_IMAGE }}:test-arm64
+
+          # Wait for startup (slower with emulation)
+          echo "Waiting for arm64 container (emulation is slow)..."
+          sleep 30
+
+          # Show logs
+          echo "=== Container logs ==="
+          docker logs untilwall-test-arm || true
+
+          # Check if container is running
+          if docker ps | grep -q "untilwall-test-arm"; then
+            echo "✅ arm64 container is running"
+          else
+            echo "❌ arm64 container failed to start"
+            docker logs untilwall-test-arm || true
+            exit 1
+          fi
+
+          docker stop untilwall-test-arm
+          docker rm untilwall-test-arm
+
+      - name: Tag and push (only if tests passed)
+        if: success()  # Only runs if test steps succeeded
+        run: |
+          docker tag ${{ env.DOCKER_IMAGE }}:test-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} \
+            ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          docker tag ${{ env.DOCKER_IMAGE }}:test-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} \
+            ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+
+          docker push ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          docker push ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+
+      - name: Cleanup on failure
+        if: failure()  # Cleanup if tests failed
+        run: |
+          echo "❌ Tests failed, not pushing to Docker Hub"
+          docker stop untilwall-test || true
+          docker rm untilwall-test || true
+          docker stop untilwall-test-arm || true
+          docker rm untilwall-test-arm || true
 
   merge-manifests:
     needs: build
