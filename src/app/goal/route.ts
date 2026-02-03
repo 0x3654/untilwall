@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
       ${goalLines.length > 0 ? `
       <!-- Goal Text -->
       <g transform="translate(0, ${widgetSpace + safeAreaTopPx + Math.round(availableHeight * 0.05) + Math.round(height * (goalTextTopOffset / 100))})">
-        <text font-family="'Custom', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Fantasy', cursive, sans-serif" font-size="${goalFontSize}" font-weight="bold" fill="${goalColor}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        <text font-family="'Custom', 'Noto Color Emoji', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Fantasy', cursive, sans-serif" font-size="${goalFontSize}" font-weight="bold" fill="${goalColor}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         ${goalTextSvg}
         </text>
       </g>

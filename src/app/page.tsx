@@ -198,6 +198,12 @@ export default function Home() {
     }
   }, [selectedDevice, hasWidgets]);
 
+  // Helper: detect if text contains emoji (to trigger PNG preview for consistency)
+  const hasEmoji = (text: string): boolean => {
+    // Detect emoji and other non-ASCII characters that render differently in browser vs server
+    return /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2B50}]|[\u{203C}]|[\u{2049}]|[\u{00A9}]|[\u{00AE}]|[\u{2122}]|[\u{23F3}]|[\u{24C2}]|[\u{23E9}-\u{23FA}]|[\u{1F170}-\u{1F251}]/u.test(text);
+  };
+
   // Build ISO dates from parts
 
   // Get current device dimensions (custom or preset)
@@ -228,6 +234,9 @@ export default function Home() {
     setPreviewLoading(true);
 
     const timeoutId = setTimeout(() => {
+      // Use PNG for preview when emoji detected in goal text (ensures consistency with server rendering)
+      const format = hasEmoji(goalText) ? 'png' : 'svg';
+
       const params = new URLSearchParams({
         start_date: startDate,
         end_date: endDate,
@@ -249,7 +258,7 @@ export default function Home() {
         past_color: pastColor,
         current_color: currentColor,
         future_color: futureColor,
-        format: 'svg', // Use SVG for faster preview!
+        format, // Use SVG for faster preview, PNG when emoji detected
         t: Date.now().toString(), // Prevent caching
       });
       const url = `/goal?${params.toString()}`;
