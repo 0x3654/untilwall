@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'compose.yaml'
+      - '.env.example'
       - '.github/workflows/build.yml'
   workflow_dispatch:  # Ручной запуск
 
