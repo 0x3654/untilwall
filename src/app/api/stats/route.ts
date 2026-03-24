@@ -11,6 +11,7 @@ export async function GET() {
     imageGenerations: stats.imageGenerations,
     uniqueVisitors: stats.uniqueVisitors.length,
     devices: stats.devices,
+    daily: stats.daily,
     lastUpdated: stats.lastUpdated,
   });
 }

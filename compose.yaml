@@ -3,7 +3,7 @@ services:
     container_name: untilwall
     image: docker.io/0x3654/untilwall:latest
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env
     environment:

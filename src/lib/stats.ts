@@ -3,11 +3,17 @@ import path from 'path';
 
 const STATS_FILE = path.join(process.cwd(), 'data', 'stats.json');
 
+interface DailyStats {
+  requests: number;
+  generations: number;
+}
+
 interface Stats {
   totalRequests: number;
   imageGenerations: number;
   uniqueVisitors: string[];
   devices: Record<string, number>;
+  daily: Record<string, DailyStats>;
   lastUpdated: string;
 }
 
@@ -22,7 +28,9 @@ function loadStats(): Stats {
   try {
     if (fs.existsSync(STATS_FILE)) {
       const data = fs.readFileSync(STATS_FILE, 'utf-8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (!parsed.daily) parsed.daily = {};
+      return parsed;
     }
   } catch (error) {
     console.error('Error loading stats:', error);
@@ -34,6 +42,7 @@ function loadStats(): Stats {
     imageGenerations: 0,
     uniqueVisitors: [],
     devices: {},
+    daily: {},
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -57,6 +66,11 @@ export function trackVisitor(ip: string) {
   }
 
   stats.totalRequests++;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (!stats.daily[today]) stats.daily[today] = { requests: 0, generations: 0 };
+  stats.daily[today].requests++;
+
   saveStats(stats);
 }
 
@@ -74,6 +88,10 @@ export function trackImageGeneration(userAgent: string) {
   else if (/Windows/.test(userAgent)) device = 'Windows';
 
   stats.devices[device] = (stats.devices[device] || 0) + 1;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (!stats.daily[today]) stats.daily[today] = { requests: 0, generations: 0 };
+  stats.daily[today].generations++;
 
   saveStats(stats);
 }
