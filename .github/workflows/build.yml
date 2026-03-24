@@ -178,3 +178,12 @@ jobs:
           echo "Available tags:"
           echo "  - ${{ env.DOCKER_IMAGE }}:latest (amd64 + arm64)"
           echo "  - ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} (amd64 + arm64)"
+
+      - name: Trigger Semaphore deploy-untilwall
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SEMAPHORE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            ${{ secrets.SEMAPHORE_URL }}/api/project/1/tasks \
+            -d "{\"template_id\": ${{ secrets.SEMAPHORE_TEMPLATE_ID }}}"
+          echo "✅ Semaphore deploy-untilwall triggered"
