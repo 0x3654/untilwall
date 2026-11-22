@@ -24,7 +24,9 @@ fn mime_for(path: &Path) -> &'static str {
         .to_ascii_lowercase()
         .as_str()
     {
-        "html" | "htm" => "text/html; charset=UTF-8",
+        // Next.js serves HTML with a lowercase charset, sirv-style assets
+        // with uppercase (verified against the reference image).
+        "html" | "htm" => "text/html; charset=utf-8",
         "css" => "text/css; charset=UTF-8",
         "js" | "mjs" => "application/javascript; charset=UTF-8",
         "json" | "map" => "application/json; charset=UTF-8",
@@ -130,7 +132,7 @@ impl StaticService {
         });
         Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .header(header::CONTENT_TYPE, "text/html; charset=UTF-8")
+            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
             .header(header::CACHE_CONTROL, "private, no-cache, no-store, max-age=0, must-revalidate")
             .body(Body::from(body))
             .unwrap()
