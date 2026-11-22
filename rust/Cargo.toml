@@ -1,0 +1,24 @@
+[package]
+name = "untilwall"
+version = "1.0.0"
+edition = "2021"
+description = "Until Wall backend: life calendar wallpaper generator (Rust port of the Next.js API)"
+license = "MIT"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["fs"] }
+resvg = "0.45"
+usvg = "0.45"
+tiny-skia = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+base64 = "0.22"
+form_urlencoded = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
