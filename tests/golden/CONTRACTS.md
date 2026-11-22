@@ -133,14 +133,19 @@ and extreme offsets, cache-key separation, health reporting.
 | image size | 346 MB | 71.6 MB |
 | cold start to healthy | ~180 ms | ~21 ms |
 | idle RSS | 54 MiB | 1.8 MiB (tini: 0.6) |
-| single PNG render | ~290 ms / 216 MiB peak | ~227 ms / 500 MiB peak |
-| 4 concurrent PNG | 1219 ms / 546 MiB peak | 546 ms / 970 MiB peak |
+| single PNG render (density 300) | ~290 ms / 216 MiB peak | ~570 ms / **50 MiB peak** |
+| 4 concurrent PNG | 1219 ms / 546 MiB peak | ~1.1 s / ~100 MiB peak |
 
-A density-300 render allocates a full 5375x11650 pixmap, and resvg peaks at
-~500 MB per render (libvips streams strips and stays at ~216 MB). To keep
-VPSes safe, concurrent rasterization is bounded by `RENDER_CONCURRENCY`
-(default 2; set 1 to cap peak near 500 MB with ~880 ms for 4 requests -
-still faster than the Next.js engine).
+PNG rasterization is strip-based (2048 rows at a time, progressive PNG
+encoding with png-crate streaming + Fast compression): peak RSS per render
+is one strip (~44 MB at density 300) instead of a full 5375x11650 pixmap
+(~250 MB, which the full-pixmap approach peaked at 500 MB with). RMSE vs
+the Next.js engine stays 2.0-2.4%. Speed is ~2x slower than the
+full-pixmap variant (~570 ms vs ~230 ms per render) - irrelevant for the
+once-a-day wallpaper use case, and `RENDER_DENSITY=72` renders at the
+device's native resolution instead (1290x2796 for a 15 Pro Max, ~17x fewer
+pixels) if a host wants both fast and tiny. `RENDER_CONCURRENCY` (default
+2) bounds parallel renders; both knobs are plain env vars.
 
 ## Behavioral notes pinned by the golden SVGs
 

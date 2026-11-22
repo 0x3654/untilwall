@@ -7,6 +7,7 @@ use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::Response;
 use base64::Engine;
 use chrono::{Datelike, NaiveDate};
+use std::io::Write as _;
 use std::sync::Arc;
 
 use crate::jsnum::{js_parse_float, js_parse_int};
@@ -213,9 +214,18 @@ pub async fn goal_handler(
             .unwrap_or_else(|_| unreachable!("semaphore never closed"));
         let fontdb = state.fontdb.clone();
         let svg = svg.clone();
-        match tokio::task::spawn_blocking(move || render_png(&fontdb, &svg)).await {
+        let density = state.render_density;
+        match tokio::task::spawn_blocking(move || render_png(&fontdb, &svg, density)).await {
             Ok(Ok(png)) => png,
-            _ => {
+            Ok(Err(e)) => {
+                eprintln!("untilwall: png render failed: {e}");
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::empty())
+                    .unwrap();
+            }
+            Err(e) => {
+                eprintln!("untilwall: render task panicked: {e}");
                 return Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::empty())
@@ -264,20 +274,75 @@ fn svg_response(svg: String, cache_status: &str) -> Response {
         .unwrap()
 }
 
+/// Demultiply premultiplied RGBA in place, with the same rounding
+/// tiny-skia's own PNG encoder uses (v / a + 0.5, cut to u8). Only
+/// translucent backgrounds hit the non-trivial path.
+fn demultiply_in_place(data: &mut [u8]) {
+    for px in data.chunks_exact_mut(4) {
+        let a = px[3];
+        if a != 255 {
+            let af = a as f64 / 255.0;
+            if a == 0 {
+                px[0] = 0;
+                px[1] = 0;
+                px[2] = 0;
+            } else {
+                px[0] = (px[0] as f64 / af + 0.5) as u8;
+                px[1] = (px[1] as f64 / af + 0.5) as u8;
+                px[2] = (px[2] as f64 / af + 0.5) as u8;
+            }
+        }
+    }
+}
+
 /// sharp(Buffer.from(svg), { density: 300 }) equivalent: resvg at scale
 /// 300/72 with pixel dimensions rounded half-up like librsvg does.
-pub fn render_png(fontdb: &Arc<usvg::fontdb::Database>, svg_str: &str) -> Result<Vec<u8>, String> {
+///
+/// Rendered in horizontal strips with a progressive PNG encoder so peak RSS
+/// stays at one strip (~22 MB) instead of a full w*h pixmap (~250 MB at
+/// density 300) - same approach libvips uses inside sharp.
+pub fn render_png(
+    fontdb: &Arc<usvg::fontdb::Database>,
+    svg_str: &str,
+    density: f64,
+) -> Result<Vec<u8>, String> {
     let mut opts = usvg::Options::default();
     opts.fontdb = fontdb.clone();
     let tree = usvg::Tree::from_str(svg_str, &opts).map_err(|e| format!("svg parse: {e}"))?;
-    let scale = 300.0f64 / 72.0;
+    let scale = density / 72.0;
     let size = tree.size();
     let w = ((size.width() as f64) * scale).round().max(1.0) as u32;
     let h = ((size.height() as f64) * scale).round().max(1.0) as u32;
-    let mut pixmap = tiny_skia::Pixmap::new(w, h).ok_or_else(|| "pixmap alloc".to_string())?;
-    let transform = usvg::Transform::from_scale(scale as f32, scale as f32);
-    resvg::render(&tree, transform, &mut pixmap.as_mut());
-    pixmap.encode_png().map_err(|e| format!("png encode: {e}"))
+
+    // 2048 rows balances traversal overhead (each strip re-visits the tree)
+    // against peak memory (w * rows * 4 bytes, ~44 MB at density 300).
+    const STRIP_ROWS: u32 = 2048;
+    let mut out = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut out, w, h);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder.set_compression(png::Compression::Fast);
+        let mut writer = encoder.write_header().map_err(|e| format!("png header: {e}"))?;
+        let mut stream = writer.stream_writer().map_err(|e| format!("png stream: {e}"))?;
+        let mut y = 0u32;
+        while y < h {
+            let rows = STRIP_ROWS.min(h - y);
+            let mut pixmap = tiny_skia::Pixmap::new(w, rows)
+                .ok_or_else(|| "pixmap alloc".to_string())?;
+            // strip row 0 == image row y: scale, then shift up by y pixels
+            let transform = usvg::Transform::from_scale(scale as f32, scale as f32)
+                .post_translate(0.0, -(y as f32));
+            resvg::render(&tree, transform, &mut pixmap.as_mut());
+            demultiply_in_place(pixmap.data_mut());
+            stream
+                .write_all(pixmap.data())
+                .map_err(|e| format!("png rows: {e}"))?;
+            y += rows;
+        }
+        stream.finish().map_err(|e| format!("png finish: {e}"))?;
+    }
+    Ok(out)
 }
 
 #[cfg(test)]

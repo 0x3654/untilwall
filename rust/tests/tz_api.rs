@@ -32,6 +32,7 @@ fn test_state(now_iso: &str, default_tz_hours: f64) -> std::sync::Arc<AppState> 
         default_tz_offset_ms: default_tz_hours * 3_600_000.0,
         now_source: Box::new(move || now),
         render_semaphore: std::sync::Arc::new(tokio::sync::Semaphore::new(2)),
+        render_density: 300.0,
     })
 }
 

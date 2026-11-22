@@ -53,6 +53,11 @@ async fn main() {
         .ok()
         .filter(|n| *n >= 1)
         .unwrap_or(2);
+    let render_density: f64 = env_or("RENDER_DENSITY", "300")
+        .parse()
+        .ok()
+        .filter(|d| (18.0..=600.0).contains(d)) // 72 = native size, 300 = reference parity
+        .unwrap_or(300.0);
 
     let mut fontdb = usvg::fontdb::Database::new();
     fontdb.load_system_fonts();
@@ -65,6 +70,7 @@ async fn main() {
         default_tz_offset_ms,
         now_source: Box::new(goal::now_utc_ms),
         render_semaphore: Arc::new(tokio::sync::Semaphore::new(render_concurrency)),
+        render_density,
     });
 
     let app = build_router(state);
@@ -74,7 +80,7 @@ async fn main() {
         .await
         .unwrap_or_else(|e| panic!("cannot bind {addr}: {e}"));
     eprintln!(
-        "untilwall listening on {addr} (static: {}, data: {}, default tz offset: {}h, render concurrency: {render_concurrency})",
+        "untilwall listening on {addr} (static: {}, data: {}, default tz offset: {}h, render concurrency: {render_concurrency}, density: {render_density})",
         static_dir.display(),
         data_dir.display(),
         default_tz_offset_ms / 3_600_000.0
