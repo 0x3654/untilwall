@@ -29,6 +29,13 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   // { name: 'iPhone 15 Pro / 15', width: 1179, height: 2556, type: 'iphone', orientation: 'portrait', circleSize: 52, circleGap: 22, padding: 18, defaultSafeArea: { top: 15, left: 16, right: 8 } },
   { name: 'iPhone Xs', width: 1125, height: 2436, type: 'iphone', orientation: 'portrait', circleSize: 50, circleGap: 20, padding: 18, defaultSafeArea: { top: 25, bottom: 10, left: 15, right: 15 } },
 
+  // iPhone Duo (foldable, 2026) - official specs: inner 7.6" 1878x2670 @430ppi,
+  // outer cover 5.4" 1398x2034 @460ppi; Dynamic Island on both displays.
+  // No device-frame overlay for preview (unavailable); the hinge crease runs
+  // down the middle of the inner screen - unavoidable for a full-bleed grid.
+  { name: 'iPhone Duo Inner 7.6"', width: 1878, height: 2670, type: 'iphone', orientation: 'portrait', circleSize: 46, circleGap: 18, padding: 30, defaultSafeArea: { top: 8, bottom: 6, left: 4, right: 4 } },
+  { name: 'iPhone Duo Outer 5.4"', width: 1398, height: 2034, type: 'iphone', orientation: 'portrait', circleSize: 48, circleGap: 20, padding: 24, defaultSafeArea: { top: 22, bottom: 25, left: 10, right: 10 } },
+
   // iPads (portrait and landscape)
   { name: 'iPad Pro 13" Portrait', width: 2048, height: 2732, type: 'ipad', orientation: 'portrait', circleSize: 48, circleGap: 20, padding: 80, defaultSafeArea: { top: 5, bottom: 5 } },
   { name: 'iPad Pro 13" Landscape', width: 2732, height: 2048, type: 'ipad', orientation: 'landscape', circleSize: 48, circleGap: 20, padding: 80, defaultSafeArea: { top: 5, bottom: 5 } },

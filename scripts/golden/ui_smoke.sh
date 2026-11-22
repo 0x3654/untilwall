@@ -19,7 +19,7 @@ check() {
 html="$(curl -sS -m 30 -A "$UA" "$NEW/")"
 
 # key UI markers from src/app/page.tsx
-for marker in "Until Wall" "Preview" "Dot style" "space for widgets" "bottom text" "Timezone" "1. Get link" "2. Get shortcut" "3. HELP!!!" "Made by 0x3654" "Inspired by The Life Calendar"; do
+for marker in "Until Wall" "Preview" "Dot style" "space for widgets" "bottom text" "Timezone" "iPhone Duo Inner" "1. Get link" "2. Get shortcut" "3. HELP!!!" "Made by 0x3654" "Inspired by The Life Calendar"; do
   if echo "$html" | grep -qF "$marker"; then echo "PASS  marker: $marker"; PASS=$((PASS+1));
   else echo "FAIL  marker missing: $marker"; FAIL=$((FAIL+1)); fi
 done
