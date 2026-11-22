@@ -49,6 +49,20 @@ Generate personalized life calendar wallpapers that visualize your life journey 
 - **Sharp** - High-performance image processing
 - **Docker** - Containerized deployment
 
+### Rust Backend (experimental)
+
+An alternative backend lives in [`rust/`](rust/) with the same API contract
+(`Dockerfile.rust`, multi-stage: static UI export → cargo test+build → slim
+alpine runtime). It generates **byte-identical SVG** responses and
+dimension-identical PNGs; `tests/golden/` holds reference captures from the
+Next.js image and `cargo test` replays them. See
+[CLAUDE_CONTEXT.md](CLAUDE_CONTEXT.md) for details.
+
+```bash
+# Build and run on http://127.0.0.1:3110
+docker compose -f compose.rust.yaml up -d --build
+```
+
 ## Quick Start
 
 ### Using Docker
