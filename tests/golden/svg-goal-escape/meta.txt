@@ -1,0 +1,5 @@
+case=svg-goal-escape
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 8eb467f1d8eabd72c5d36aaf6372f65e2f02466f572bba6a3e6ebb212521cf84
+bytes: 32841

@@ -1,0 +1,5 @@
+case=png-widgets-offsets
+HTTP/1.1 200 OK
+content-type: image/png
+sha256: 561ca649eaced11c8c1b1fd744b772fca49aff252a6dd8a7dcf582412a3cc003
+bytes: 2185540

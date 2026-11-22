@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+cache-control: no-store, no-cache, must-revalidate
+content-type: text/html; charset=utf-8
+Date: Sun, 22 Nov 2026 20:16:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+

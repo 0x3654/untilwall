@@ -1,0 +1,5 @@
+case=svg-colors
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: d59b6e7d398bcad6d5f139b0c91f6debe49ba272152a7bb65bf48023b75abb25
+bytes: 32806

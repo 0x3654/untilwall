@@ -1,0 +1,5 @@
+case=png-landscape
+HTTP/1.1 200 OK
+content-type: image/png
+sha256: 8a80928ce4e5b3830eef9a62a3bad91703f59fbc1b50bcdb9e5a8ddc95a14f3e
+bytes: 3335327

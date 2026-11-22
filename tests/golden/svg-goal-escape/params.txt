@@ -1,0 +1,4 @@
+start_date	2026-01-01
+end_date	2026-12-31
+goal_text	%3Cb%3E%26%22quote%22%3C%2Fb%3E
+format	svg

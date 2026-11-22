@@ -1,0 +1,5 @@
+case=png-goal-emoji
+HTTP/1.1 200 OK
+content-type: image/png
+sha256: 64d26c4322239bfb5224ecb037583d3df94fbc37a7ea423590691999c7e50284
+bytes: 2048953

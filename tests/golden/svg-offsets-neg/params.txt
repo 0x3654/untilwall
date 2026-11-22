@@ -1,0 +1,7 @@
+start_date	2026-01-01
+end_date	2026-12-31
+offset_top	-5.5
+offset_bottom	-3
+offset_left	-2.25
+offset_right	-7
+format	svg

@@ -1,0 +1,5 @@
+case=svg-future-start
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 6d2e4dc1798a6257057acd98b464cbbe534b4546289aa7d2991042757e69aa7e
+bytes: 33138

@@ -1,0 +1,9 @@
+start_date	2026-01-01
+end_date	2026-12-31
+bg_color	%23001230
+past_color	%23ffd700
+current_color	%2300ffcc
+future_color	%23444455
+goal_color	%23ff0055
+goal_text	Colors
+format	svg

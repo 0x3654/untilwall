@@ -1,0 +1,5 @@
+case=png-style-0
+HTTP/1.1 200 OK
+content-type: image/png
+sha256: 6b6a72783ff461a1e029578cae63882d6b4873c3d10945219fb5bc52676b7e1f
+bytes: 2383136

@@ -1,0 +1,5 @@
+case=svg-bad-date
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 872754de906df8e053f5fa6b22ff768b6f0014b731ad926edb9475fc897061aa
+bytes: 1142

@@ -1,0 +1,5 @@
+case=svg-offsets
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 3411a434e32b91762d6862ee45c975838c4aeaaf0c2ffcdec1b8956c39235f82
+bytes: 45892

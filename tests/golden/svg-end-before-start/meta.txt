@@ -1,0 +1,5 @@
+case=svg-end-before-start
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 1fc26ca608f07c8d456a30cfda395d4d3515367bbb092e0565aa0a2558049ec8
+bytes: 1293

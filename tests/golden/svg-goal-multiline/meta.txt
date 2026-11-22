@@ -1,0 +1,5 @@
+case=svg-goal-multiline
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: d2b0e0f425ee9b0ac8e387a0ebc4608dea90ea62771b5647cbff6b0164ff5649
+bytes: 32876

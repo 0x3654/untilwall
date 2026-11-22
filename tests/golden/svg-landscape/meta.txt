@@ -1,0 +1,5 @@
+case=svg-landscape
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 720e841607d7ea5019abcc02aaba57efe61fa41249024b07c5faa13a8591d2e3
+bytes: 34386

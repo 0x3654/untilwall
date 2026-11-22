@@ -1,0 +1,5 @@
+case=png-odd-size
+HTTP/1.1 200 OK
+content-type: image/png
+sha256: 7a6eb7f13afeeed27d2c67d1663cc4af1166cce839e6379adc7bdf8d5df702d5
+bytes: 714678

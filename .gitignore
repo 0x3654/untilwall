@@ -35,6 +35,20 @@ yarn-error.log*
 /.data/*
 !/.data/.gitkeep
 /src/data
+/rust-data/
+
+# Rust backend local artifacts
+rust/target/
+
+# Golden reference capture (heavy binary bodies stay out of git;
+# manifest.sha256 + headers + params are committed)
+tests/golden/png-*/body
+tests/golden/html-true/body
+
+# A/B comparison scratch
+.ab-results/
+.golden-tmp/
+ui-out/
 
 # TypeScript
 *.tsbuildinfo

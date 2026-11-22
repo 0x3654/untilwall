@@ -1,0 +1,5 @@
+case=svg-goal-emoji
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: c02b41026ec53789a31db4db13d914c2e4f339866768536a42e3b7f00ead4d8a
+bytes: 32819

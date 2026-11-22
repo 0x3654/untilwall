@@ -1,0 +1,7 @@
+start_date	2026-01-01
+end_date	2026-12-31
+has_widgets	true
+offset_top	15
+offset_bottom	25
+offset_left	10
+offset_right	10

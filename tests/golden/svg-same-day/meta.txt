@@ -1,0 +1,5 @@
+case=svg-same-day
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 79a3fdca11cc51634fcb3532fc8f484f3d36dd7814300891f87d97240777c688
+bytes: 1216

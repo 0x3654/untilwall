@@ -1,0 +1,5 @@
+case=svg-long-range
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 531d0f7e91fe3ef8bb81e90fd60a16a6f324ca36eb50af574e841fd38363c5c9
+bytes: 3673138

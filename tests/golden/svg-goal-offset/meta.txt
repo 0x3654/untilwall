@@ -1,0 +1,5 @@
+case=svg-goal-offset
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 649a5a5131b07f711fe396c04bb158efea8d831a58d85add009c1ad1b615a382
+bytes: 32804

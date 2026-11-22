@@ -1,0 +1,5 @@
+case=svg-goal-ru
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: c0b7bf2ac697cf4c350ccb8589e224286fccacc001547bfba847bfe1c97ff6d0
+bytes: 32834

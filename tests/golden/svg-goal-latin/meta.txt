@@ -1,0 +1,5 @@
+case=svg-goal-latin
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 4eed111e1db55bfdba6cc3ec0d02378819324edf245669a094ca4d4b4d9368e3
+bytes: 32804

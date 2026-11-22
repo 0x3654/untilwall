@@ -1,0 +1,5 @@
+case=svg-widgets
+HTTP/1.1 200 OK
+content-type: image/svg+xml
+sha256: 6a36f1f140bcad16acb120a73a6a094f49e84cb625420c54c0057bd6719cb53d
+bytes: 32497
