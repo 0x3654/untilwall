@@ -115,6 +115,17 @@ the container default. The parameter participates in the SVG cache key.
 Without a `tz` param and with `TZ` unset the output is byte-identical to the
 Next.js reference (golden tests pin this).
 
+`GET /api/health` additionally reports the resolved container default as
+`"defaultTzOffset":<hours>` (integer or fractional); the UI fetches it on
+load and preselects the matching offset in the Timezone selector (no
+hardcoded default; while undiscovered no tz param is sent, which yields the
+same server-side result).
+
+Integration coverage: `rust/tests/tz_api.rs` drives the real router with an
+injected clock - day-boundary shifts at Moscow midnight, container default
+equivalence, UTC parity invariant, invalid/out-of-range fallback, fractional
+and extreme offsets, cache-key separation, health reporting.
+
 ## Behavioral notes pinned by the golden SVGs
 
 - Numbers are interpolated with JS semantics: shortest round-trip floats,

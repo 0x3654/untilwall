@@ -4,6 +4,7 @@ pub mod cache;
 pub mod goal;
 pub mod jsnum;
 pub mod query;
+pub mod server;
 pub mod state;
 pub mod static_files;
 pub mod stats;

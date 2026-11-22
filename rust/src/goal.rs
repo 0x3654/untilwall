@@ -193,7 +193,7 @@ pub async fn goal_handler(
     }
 
     let tz_ms = parse_tz_offset(q.get("tz"), state.default_tz_offset_ms);
-    let now_ms = local_midnight(now_utc_ms(), tz_ms);
+    let now_ms = local_midnight((state.now_source)(), tz_ms);
     let cfg = parse_params(&q, now_ms, tz_ms);
     let svg = generate_svg(&cfg);
 

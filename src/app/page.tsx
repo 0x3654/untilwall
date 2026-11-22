@@ -170,6 +170,19 @@ export default function Home() {
 
     trackVisit();
 
+    // Discover the container's default timezone and preselect it
+    if (tzOffset === null) {
+      fetch('/api/health')
+        .then(res => res.json())
+        .then(h => {
+          const off = h.defaultTzOffset;
+          if (typeof off === 'number' && Number.isInteger(off) && off >= -12 && off <= 14) {
+            setTzOffset(off === 0 ? '0' : off > 0 ? `+${off}` : `${off}`);
+          }
+        })
+        .catch(err => console.error('Failed to fetch server tz:', err));
+    }
+
     // Load stats
     fetch('/api/stats')
       .then(res => res.json())
@@ -184,7 +197,13 @@ export default function Home() {
   const [offsetLeft, setOffsetLeft] = useState(savedSettings?.offsetLeft ?? defaultSafeArea.left ?? 0);
   const [offsetRight, setOffsetRight] = useState(savedSettings?.offsetRight ?? defaultSafeArea.right ?? 0);
   const [goalTextTopOffset, setGoalTextTopOffset] = useState(savedSettings?.goalTextTopOffset ?? 0); // Goal text top offset (%)
-  const [tzOffset, setTzOffset] = useState<string>(savedSettings?.tzOffset ?? 'auto'); // Day boundary timezone ('auto' = server default)
+  // Day boundary timezone. Null until discovered: the server's container
+  // default (from /api/health) becomes the initial selection - no hardcoded
+  // offset. While null no tz param is sent, so the server default applies
+  // server-side anyway (same result).
+  const [tzOffset, setTzOffset] = useState<string | null>(
+    savedSettings?.tzOffset && savedSettings.tzOffset !== 'auto' ? savedSettings.tzOffset : null
+  );
 
   // Save settings to cookie whenever any parameter changes
   useEffect(() => {
@@ -295,7 +314,7 @@ export default function Home() {
         format, // Use SVG for faster preview, PNG when emoji detected
         t: Date.now().toString(), // Prevent caching
       });
-      if (tzOffset !== 'auto') {
+      if (tzOffset !== null) {
         params.set('tz', tzOffset);
       }
       const url = `/goal?${params.toString()}`;
@@ -334,7 +353,7 @@ export default function Home() {
       current_color: currentColor,
       future_color: futureColor,
     });
-    if (tzOffset !== 'auto') {
+    if (tzOffset !== null) {
       params.set('tz', tzOffset);
     }
     const url = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/goal?${params.toString()}`;
@@ -474,12 +493,14 @@ export default function Home() {
                 Timezone
               </label>
               <select
-                value={tzOffset}
+                value={tzOffset ?? ''}
                 onChange={(e) => setTzOffset(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm font-medium text-white focus:outline-none"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
               >
-                <option value="auto">Auto (server default)</option>
+                {tzOffset === null && (
+                  <option value="" disabled>Server default</option>
+                )}
                 {Array.from({ length: 27 }, (_, i) => i - 12).map((h) => {
                   const value = h === 0 ? '0' : h > 0 ? `+${h}` : `${h}`;
                   const label = h === 0 ? 'UTC±0' : h > 0 ? `UTC+${h}` : `UTC${h}`;

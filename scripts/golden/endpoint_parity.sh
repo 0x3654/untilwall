@@ -50,11 +50,14 @@ check "x-cache MISS" "miss" "$(grep -i '^x-cache:' "$OUT/new-miss.h" | tr -d '\r
 check "x-cache HIT"  "hit"  "$(grep -i '^x-cache:' "$OUT/new-hit.h" | tr -d '\r' | awk '{print tolower($2)}')"
 
 # --- /api/health: status + content-type + body shape
+# (the Rust server additionally reports defaultTzOffset - a conscious tz
+# extension - so old keys must be a SUBSET of new keys here)
 check "health status" "$(status_of "$OLD/api/health")" "$(status_of "$NEW/api/health")"
 check "health ct" "$(ct_of "$OLD/api/health")" "$(ct_of "$NEW/api/health")"
-old_h="$(curl -sS -m 30 "$OLD/api/health" | jq -r 'keys|join(",")')"
-new_h="$(curl -sS -m 30 "$NEW/api/health" | jq -r 'keys|join(",")')"
-check "health body keys" "$old_h" "$new_h"
+old_h="$(curl -sS -m 30 "$OLD/api/health" | jq -r 'keys|sort|join(",")')"
+new_h="$(curl -sS -m 30 "$NEW/api/health" | jq -r 'keys|sort|join(",")')"
+missing="$(comm -23 <(echo "$old_h" | tr ',' '\n') <(echo "$new_h" | tr ',' '\n') | tr '\n' ',')"
+check "health body keys (old subset of new)" "" "$missing"
 check "health status field" "ok" "$(curl -sS -m 30 "$NEW/api/health" | jq -r .status)"
 
 # --- POST /api/visit
