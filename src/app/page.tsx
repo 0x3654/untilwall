@@ -26,6 +26,38 @@ const getCurrentYearBounds = () => {
   };
 };
 
+// Representative zones for each fixed UTC offset (illustrative only - the
+// applied offset never changes with DST)
+const TZ_CITY_BY_OFFSET: Record<string, string> = {
+  '-12': 'Baker Island',
+  '-11': 'Samoa',
+  '-10': 'Hawaii',
+  '-9': 'Alaska',
+  '-8': 'Los Angeles',
+  '-7': 'Denver',
+  '-6': 'Chicago, Mexico City',
+  '-5': 'New York, Toronto',
+  '-4': 'Halifax, Santiago',
+  '-3': 'São Paulo, Buenos Aires',
+  '-2': 'South Georgia',
+  '-1': 'Azores',
+  '0': 'London, Reykjavik',
+  '+1': 'Berlin, Paris',
+  '+2': 'Kaliningrad, Kyiv',
+  '+3': 'Moscow',
+  '+4': 'Samara, Dubai',
+  '+5': 'Yekaterinburg, Tashkent',
+  '+6': 'Omsk, Almaty',
+  '+7': 'Novosibirsk, Bangkok',
+  '+8': 'Irkutsk, Beijing',
+  '+9': 'Yakutsk, Tokyo',
+  '+10': 'Vladivostok, Sydney',
+  '+11': 'Magadan',
+  '+12': 'Kamchatka, Auckland',
+  '+13': 'Apia',
+  '+14': 'Kiritimati',
+};
+
 // Cookie helpers
 const getSettingsFromCookie = () => {
   if (typeof window === 'undefined') return null;
@@ -451,15 +483,16 @@ export default function Home() {
                 {Array.from({ length: 27 }, (_, i) => i - 12).map((h) => {
                   const value = h === 0 ? '0' : h > 0 ? `+${h}` : `${h}`;
                   const label = h === 0 ? 'UTC±0' : h > 0 ? `UTC+${h}` : `UTC${h}`;
+                  const cities = TZ_CITY_BY_OFFSET[value] || '';
                   return (
                     <option key={value} value={value}>
-                      {label}{h === 3 ? ' (Moscow)' : ''}
+                      {cities ? `${label} (${cities})` : label}
                     </option>
                   );
                 })}
               </select>
               <p className="text-xs mt-1 text-lc-percent-gray">
-                Day boundary: when the calendar switches to the next day
+                Day boundary: when the calendar switches to the next day (fixed offset, no DST)
               </p>
             </div>
 
