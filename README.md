@@ -158,7 +158,7 @@ The `.env` file is gitignored, so users can configure their own URL. Document th
 ### iPhone
 - iPhone 15 Pro Max / Plus (1290×2796)
 - iPhone Xs (1125×2436)
-- iPhone Duo Inner 7.6" (1878×2670) - foldable, main display
+- iPhone Duo Inner 7.6" Landscape (2670×1878) - foldable, main display
 - iPhone Duo Outer 5.4" (1398×2034) - foldable, cover display
 
 ### iPad
@@ -515,7 +515,7 @@ env:
 ### iPhone
 - iPhone 15 Pro Max / Plus (1290×2796)
 - iPhone Xs (1125×2436)
-- iPhone Duo Inner 7.6" (1878×2670) - foldable, main display
+- iPhone Duo Inner 7.6" Landscape (2670×1878) - foldable, main display
 - iPhone Duo Outer 5.4" (1398×2034) - foldable, cover display
 
 ### iPad
