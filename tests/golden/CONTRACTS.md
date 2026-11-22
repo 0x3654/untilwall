@@ -126,6 +126,22 @@ injected clock - day-boundary shifts at Moscow midnight, container default
 equivalence, UTC parity invariant, invalid/out-of-range fallback, fractional
 and extreme offsets, cache-key separation, health reporting.
 
+## Resource notes (measured, arm64, 2026-11-23)
+
+| metric | Next.js image | Rust image |
+|---|---|---|
+| image size | 346 MB | 71.6 MB |
+| cold start to healthy | ~180 ms | ~21 ms |
+| idle RSS | 54 MiB | 1.8 MiB (tini: 0.6) |
+| single PNG render | ~290 ms / 216 MiB peak | ~227 ms / 500 MiB peak |
+| 4 concurrent PNG | 1219 ms / 546 MiB peak | 546 ms / 970 MiB peak |
+
+A density-300 render allocates a full 5375x11650 pixmap, and resvg peaks at
+~500 MB per render (libvips streams strips and stays at ~216 MB). To keep
+VPSes safe, concurrent rasterization is bounded by `RENDER_CONCURRENCY`
+(default 2; set 1 to cap peak near 500 MB with ~880 ms for 4 requests -
+still faster than the Next.js engine).
+
 ## Behavioral notes pinned by the golden SVGs
 
 - Numbers are interpolated with JS semantics: shortest round-trip floats,

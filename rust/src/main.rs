@@ -48,6 +48,11 @@ async fn main() {
     let data_dir = PathBuf::from(env_or("DATA_DIR", "data"));
     let static_dir = PathBuf::from(env_or("STATIC_DIR", "static"));
     let default_tz_offset_ms = resolve_default_tz_ms();
+    let render_concurrency: usize = env_or("RENDER_CONCURRENCY", "2")
+        .parse()
+        .ok()
+        .filter(|n| *n >= 1)
+        .unwrap_or(2);
 
     let mut fontdb = usvg::fontdb::Database::new();
     fontdb.load_system_fonts();
@@ -59,6 +64,7 @@ async fn main() {
         static_service: StaticService::new(&static_dir),
         default_tz_offset_ms,
         now_source: Box::new(goal::now_utc_ms),
+        render_semaphore: Arc::new(tokio::sync::Semaphore::new(render_concurrency)),
     });
 
     let app = build_router(state);
@@ -68,7 +74,7 @@ async fn main() {
         .await
         .unwrap_or_else(|e| panic!("cannot bind {addr}: {e}"));
     eprintln!(
-        "untilwall listening on {addr} (static: {}, data: {}, default tz offset: {}h)",
+        "untilwall listening on {addr} (static: {}, data: {}, default tz offset: {}h, render concurrency: {render_concurrency})",
         static_dir.display(),
         data_dir.display(),
         default_tz_offset_ms / 3_600_000.0

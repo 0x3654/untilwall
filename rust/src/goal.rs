@@ -202,10 +202,18 @@ pub async fn goal_handler(
         return svg_response(svg, "MISS");
     }
 
-    // Rasterize off the async executor (5375x11650 renders take a while).
+    // Rasterize off the async executor (5375x11650 renders take a while),
+    // bounded by a semaphore: each render peaks at ~500 MB RSS.
     let png = {
+        // Semaphore::clone() is an Arc bump, made for exactly this pattern.
+        let semaphore = state.render_semaphore.clone();
+        let _render_permit = semaphore
+            .acquire()
+            .await
+            .unwrap_or_else(|_| unreachable!("semaphore never closed"));
+        let fontdb = state.fontdb.clone();
         let svg = svg.clone();
-        match tokio::task::spawn_blocking(move || render_png(&state.fontdb, &svg)).await {
+        match tokio::task::spawn_blocking(move || render_png(&fontdb, &svg)).await {
             Ok(Ok(png)) => png,
             _ => {
                 return Response::builder()

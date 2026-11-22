@@ -31,6 +31,7 @@ fn test_state(now_iso: &str, default_tz_hours: f64) -> std::sync::Arc<AppState> 
         static_service: StaticService::new(data_dir.join("static")),
         default_tz_offset_ms: default_tz_hours * 3_600_000.0,
         now_source: Box::new(move || now),
+        render_semaphore: std::sync::Arc::new(tokio::sync::Semaphore::new(2)),
     })
 }
 
