@@ -1,0 +1,18 @@
+services:
+  untilwall-rust:
+    container_name: untilwall-rust
+    build:
+      context: .
+      dockerfile: Dockerfile.rust
+      args:
+        APP_URL: ${NEXT_PUBLIC_APP_URL:-http://127.0.0.1:3110}
+    image: docker.io/0x3654/untilwall-rust:local
+    ports:
+      - "127.0.0.1:3110:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./rust-data:/app/data
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
+    restart: unless-stopped

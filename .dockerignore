@@ -1,0 +1,21 @@
+# Dockerfile.rust build context (repo root)
+.git
+.ansible
+.claude
+.data
+.golden-tmp
+.ab-results
+.vscode
+.github
+screenshots
+SVG
+node_modules
+src/node_modules
+src/.next
+rust-data
+rust/target
+ui-out
+tests/golden/png-*/body
+tests/golden/html-true/body
+*.log
+.DS_Store
