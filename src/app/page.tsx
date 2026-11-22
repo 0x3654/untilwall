@@ -152,6 +152,7 @@ export default function Home() {
   const [offsetLeft, setOffsetLeft] = useState(savedSettings?.offsetLeft ?? defaultSafeArea.left ?? 0);
   const [offsetRight, setOffsetRight] = useState(savedSettings?.offsetRight ?? defaultSafeArea.right ?? 0);
   const [goalTextTopOffset, setGoalTextTopOffset] = useState(savedSettings?.goalTextTopOffset ?? 0); // Goal text top offset (%)
+  const [tzOffset, setTzOffset] = useState<string>(savedSettings?.tzOffset ?? 'auto'); // Day boundary timezone ('auto' = server default)
 
   // Save settings to cookie whenever any parameter changes
   useEffect(() => {
@@ -168,10 +169,11 @@ export default function Home() {
       goalText,
       offsetTop, offsetBottom, offsetLeft, offsetRight,
       goalTextTopOffset,
+      tzOffset,
       bgColor, pastColor, currentColor, futureColor, goalColor
     };
     saveSettingsToCookie(settings);
-  }, [selectedDevice, startDay, startMonth, startYear, endDay, endMonth, endYear, hasWidgets, ringStyle, dotScale, showText, elapsedMode, goalText, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, bgColor, pastColor, currentColor, futureColor, goalColor]);
+  }, [selectedDevice, startDay, startMonth, startYear, endDay, endMonth, endYear, hasWidgets, ringStyle, dotScale, showText, elapsedMode, goalText, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, tzOffset, bgColor, pastColor, currentColor, futureColor, goalColor]);
 
   // Update offsets when device or widgets change
   useEffect(() => {
@@ -261,6 +263,9 @@ export default function Home() {
         format, // Use SVG for faster preview, PNG when emoji detected
         t: Date.now().toString(), // Prevent caching
       });
+      if (tzOffset !== 'auto') {
+        params.set('tz', tzOffset);
+      }
       const url = `/goal?${params.toString()}`;
       setImageUrl(url);
 
@@ -272,7 +277,7 @@ export default function Home() {
     }, 300); // 300ms debounce (faster response)
 
     return () => clearTimeout(timeoutId);
-  }, [startDate, endDate, hasWidgets, ringStyle, showText, elapsedMode, goalText, selectedDevice, isCustomDevice, customWidth, customHeight, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, dotScale, bgColor, pastColor, currentColor, futureColor, goalColor]);
+  }, [startDate, endDate, hasWidgets, ringStyle, showText, elapsedMode, goalText, selectedDevice, isCustomDevice, customWidth, customHeight, offsetTop, offsetBottom, offsetLeft, offsetRight, goalTextTopOffset, tzOffset, dotScale, bgColor, pastColor, currentColor, futureColor, goalColor]);
 
   const shareUrl = async () => {
     const params = new URLSearchParams({
@@ -297,6 +302,9 @@ export default function Home() {
       current_color: currentColor,
       future_color: futureColor,
     });
+    if (tzOffset !== 'auto') {
+      params.set('tz', tzOffset);
+    }
     const url = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/goal?${params.toString()}`;
 
     try {
@@ -428,6 +436,32 @@ export default function Home() {
                 <p style={{ color: '#ff6b35' }}>{dateError}</p>
               </div>
             )}
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-white">
+                Timezone
+              </label>
+              <select
+                value={tzOffset}
+                onChange={(e) => setTzOffset(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium text-white focus:outline-none"
+                style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
+              >
+                <option value="auto">Auto (server default)</option>
+                {Array.from({ length: 27 }, (_, i) => i - 12).map((h) => {
+                  const value = h === 0 ? '0' : h > 0 ? `+${h}` : `${h}`;
+                  const label = h === 0 ? 'UTC±0' : h > 0 ? `UTC+${h}` : `UTC${h}`;
+                  return (
+                    <option key={value} value={value}>
+                      {label}{h === 3 ? ' (Moscow)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="text-xs mt-1 text-lc-percent-gray">
+                Day boundary: when the calendar switches to the next day
+              </p>
+            </div>
 
             <div className="flex gap-4 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer text-white">

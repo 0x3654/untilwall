@@ -198,6 +198,7 @@ Generate PNG/SVG calendar image.
 | `future_color` | string | `#2a2a2a` | Future days color (hex) |
 | `format` | string | `png` | Output format: `png` for download, `svg` for faster preview |
 | `html` | boolean | `false` | Return HTML page with centered image (for debugging) |
+| `tz` | string | server `TZ` | Timezone offset for the day boundary, signed hours from UTC (`-5`, `0`, `+3`, `+5.5`); when absent the container `TZ` applies (Rust backend) |
 
 **Examples:**
 
