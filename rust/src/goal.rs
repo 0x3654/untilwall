@@ -70,13 +70,40 @@ pub fn js_date_ms(s: &str) -> Option<f64> {
 /// "Now" with hours zeroed, like `const now = new Date(); now.setHours(0,0,0,0)`
 /// in the UTC-based reference container.
 pub fn now_midnight_utc_ms() -> f64 {
-    let now = chrono::Utc::now().naive_utc();
-    NaiveDate::from_ymd_opt(now.year(), now.month(), now.day())
-        .expect("valid today")
-        .and_hms_opt(0, 0, 0)
-        .expect("valid midnight")
-        .and_utc()
+    local_midnight(now_utc_ms(), 0.0)
+}
+
+/// Current instant in UTC epoch milliseconds.
+pub fn now_utc_ms() -> f64 {
+    chrono::Utc::now()
         .timestamp_millis() as f64
+}
+
+/// Midnight of the current local date for a fixed UTC offset, expressed in
+/// UTC epoch ms. Mirrors `new Date(); setHours(0,0,0,0)` in a container
+/// running in that timezone: with offset +3h the "today" boundary falls at
+/// 21:00 UTC (00:00 local).
+pub fn local_midnight(now_utc: f64, offset_ms: f64) -> f64 {
+    const DAY: f64 = 86_400_000.0;
+    ((now_utc + offset_ms) / DAY).floor() * DAY - offset_ms
+}
+
+/// Parse the `tz` query parameter: signed hours offset from UTC ("-5", "0",
+/// "+3", "+5.5"), accepted within the real-world zone range [-12, +14].
+/// Absent, empty, invalid or out-of-range values fall back to the server
+/// default (resolved from the TZ env at startup).
+pub fn parse_tz_offset(value: Option<&str>, default_ms: f64) -> f64 {
+    const HOUR: f64 = 3_600_000.0;
+    let Some(raw) = value else { return default_ms };
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return default_ms;
+    }
+    // f64::from_str accepts "+3", "-5", "3", "5.5" and rejects "3h"/"UTC+3"
+    match raw.parse::<f64>() {
+        Ok(h) if (-12.0..=14.0).contains(&h) => h * HOUR,
+        _ => default_ms,
+    }
 }
 
 fn get_or<'a>(q: &'a Query, key: &str, default: &'a str) -> &'a str {
@@ -87,13 +114,28 @@ fn get_or<'a>(q: &'a Query, key: &str, default: &'a str) -> &'a str {
     }
 }
 
-pub fn parse_params(q: &Query, now_ms: f64) -> GoalConfig {
+/// Apply the timezone shift the way a JS runtime in that zone would:
+/// date-only strings parse as UTC midnight, then `setHours(0,0,0,0)`
+/// re-pins them to local midnight, i.e. utc_midnight - offset. Shifting
+/// start/end/now by the same offset keeps every day difference equal to the
+/// plain local-date day count (verified against TZ-set JS containers).
+fn shift_epoch(ms: Option<f64>, offset_ms: f64) -> f64 {
+    match ms {
+        Some(v) => v - offset_ms,
+        None => f64::NAN,
+    }
+}
+
+pub fn parse_params(q: &Query, now_ms: f64, tz_offset_ms: f64) -> GoalConfig {
     // JS reads goalColor as `get('goal_color') || currentColor` - resolve the
     // dependency order here.
     let current_color = get_or(q, "current_color", "#ff6b35").to_string();
     GoalConfig {
-        start_ms: js_date_ms(get_or(q, "start_date", "2000-01-01")).unwrap_or(f64::NAN),
-        end_ms: js_date_ms(get_or(q, "end_date", "2080-01-01")).unwrap_or(f64::NAN),
+        start_ms: shift_epoch(
+            js_date_ms(get_or(q, "start_date", "2000-01-01")),
+            tz_offset_ms,
+        ),
+        end_ms: shift_epoch(js_date_ms(get_or(q, "end_date", "2080-01-01")), tz_offset_ms),
         now_ms,
         width: js_parse_int(get_or(q, "width", "1290")).unwrap_or(f64::NAN),
         height: js_parse_int(get_or(q, "height", "2796")).unwrap_or(f64::NAN),
@@ -150,7 +192,9 @@ pub async fn goal_handler(
         }
     }
 
-    let cfg = parse_params(&q, now_midnight_utc_ms());
+    let tz_ms = parse_tz_offset(q.get("tz"), state.default_tz_offset_ms);
+    let now_ms = local_midnight(now_utc_ms(), tz_ms);
+    let cfg = parse_params(&q, now_ms, tz_ms);
     let svg = generate_svg(&cfg);
 
     if format == "svg" {
@@ -252,5 +296,58 @@ mod tests {
         let end = js_date_ms("2026-12-31").unwrap();
         let total = ((end - start) / 86_400_000.0).floor() + 1.0;
         assert_eq!(total, 365.0);
+    }
+
+    #[test]
+    fn tz_param_parsing() {
+        let hour = 3_600_000.0;
+        assert_eq!(parse_tz_offset(None, 0.0), 0.0);
+        assert_eq!(parse_tz_offset(Some("+3"), 0.0), 3.0 * hour);
+        assert_eq!(parse_tz_offset(Some("-5"), 0.0), -5.0 * hour);
+        assert_eq!(parse_tz_offset(Some("0"), 7.0 * hour), 0.0);
+        assert_eq!(parse_tz_offset(Some("+5.5"), 0.0), 5.5 * hour);
+        assert_eq!(parse_tz_offset(Some(""), 7.0 * hour), 7.0 * hour); // empty -> default
+        assert_eq!(parse_tz_offset(Some("garbage"), 7.0 * hour), 7.0 * hour);
+        assert_eq!(parse_tz_offset(Some("+15"), 7.0 * hour), 7.0 * hour); // out of range
+        assert_eq!(parse_tz_offset(Some("UTC+3"), 7.0 * hour), 7.0 * hour); // not a bare number
+    }
+
+    #[test]
+    fn msk_midnight_rollover() {
+        let msk = 3.0 * 3_600_000.0;
+        // 2026-11-22T20:59Z == 23:59 MSK, still Nov 22 locally
+        let before = js_date_ms("2026-11-22T20:59:59Z").unwrap();
+        assert_eq!(
+            local_midnight(before, msk),
+            js_date_ms("2026-11-21T21:00:00Z").unwrap() // Nov 22 00:00 MSK
+        );
+        // a minute later it is Nov 23 in Moscow
+        let after = before + 61_000.0;
+        assert_eq!(local_midnight(after, msk), local_midnight(before, msk) + 86_400_000.0);
+        // UTC offset keeps plain UTC midnights
+        assert_eq!(
+            local_midnight(before, 0.0),
+            js_date_ms("2026-11-22T00:00:00Z").unwrap()
+        );
+    }
+
+    #[test]
+    fn tz_day_count_matches_js_container_semantics() {
+        // With TZ=Europe/Moscow a JS container shifts start/end/now by the
+        // same offset, so day counts equal the plain local-date difference.
+        let msk = 3.0 * 3_600_000.0;
+        let start = js_date_ms("2026-01-01").unwrap() - msk; // setHours(0,0,0,0) in MSK
+        let now = local_midnight(js_date_ms("2026-11-22T20:59:59Z").unwrap(), msk);
+        let days = ((now - start) / 86_400_000.0).floor();
+        assert_eq!(days, 325.0); // Jan 1 .. Nov 22
+        // the same request without a shift (UTC container) is one day behind
+        // until 21:00Z - but at 20:59Z UTC is still Nov 22 too:
+        let now_utc = local_midnight(js_date_ms("2026-11-22T20:59:59Z").unwrap(), 0.0);
+        let days_utc = ((now_utc - js_date_ms("2026-01-01").unwrap()) / 86_400_000.0).floor();
+        assert_eq!(days_utc, 325.0);
+        // ...and just after 21:00Z Moscow is already on the next day:
+        let now_late = local_midnight(js_date_ms("2026-11-22T21:00:01Z").unwrap(), msk);
+        let days_late = ((now_late - start) / 86_400_000.0).floor();
+        assert_eq!(days_late, 326.0);
     }
 }

@@ -13,6 +13,7 @@ use axum::http::{header, HeaderMap};
 use axum::response::Response;
 use axum::routing::{get, post};
 use axum::Router;
+use chrono::Offset as _;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use untilwall::cache::SvgCache;
@@ -101,11 +102,39 @@ async fn static_fallback(State(state): State<Arc<AppState>>, req: axum::extract:
     state.static_service.serve(&path).await
 }
 
+/// Resolve the container-level default timezone offset from the TZ env.
+/// Accepts an IANA zone name ("Europe/Moscow", DST-aware via chrono-tz) or
+/// a bare signed number of hours ("+3", "-5"). Unset/UTC/unknown -> 0.
+fn resolve_default_tz_ms() -> f64 {
+    const HOUR: f64 = 3_600_000.0;
+    let tz = std::env::var("TZ").unwrap_or_default();
+    let tz = tz.trim();
+    if tz.is_empty() || tz == "UTC" || tz == "GMT" {
+        return 0.0;
+    }
+    if let Ok(h) = tz.parse::<f64>() {
+        if (-12.0..=14.0).contains(&h) {
+            return h * HOUR;
+        }
+    }
+    if let Ok(zone) = tz.parse::<chrono_tz::Tz>() {
+        let seconds = chrono::Utc::now()
+            .with_timezone(&zone)
+            .offset()
+            .fix()
+            .local_minus_utc();
+        return seconds as f64 * 1000.0;
+    }
+    eprintln!("untilwall: unrecognized TZ='{tz}', defaulting to UTC");
+    0.0
+}
+
 #[tokio::main]
 async fn main() {
     let port = env_or("PORT", "3000");
     let data_dir = PathBuf::from(env_or("DATA_DIR", "data"));
     let static_dir = PathBuf::from(env_or("STATIC_DIR", "static"));
+    let default_tz_offset_ms = resolve_default_tz_ms();
 
     let mut fontdb = usvg::fontdb::Database::new();
     fontdb.load_system_fonts();
@@ -115,6 +144,7 @@ async fn main() {
         stats: stats::Stats::new(&data_dir),
         fontdb: Arc::new(fontdb),
         static_service: StaticService::new(&static_dir),
+        default_tz_offset_ms,
     });
 
     let app = Router::new()
@@ -130,9 +160,10 @@ async fn main() {
         .await
         .unwrap_or_else(|e| panic!("cannot bind {addr}: {e}"));
     eprintln!(
-        "untilwall listening on {addr} (static: {}, data: {})",
+        "untilwall listening on {addr} (static: {}, data: {}, default tz offset: {}h)",
         static_dir.display(),
-        data_dir.display()
+        data_dir.display(),
+        default_tz_offset_ms / 3_600_000.0
     );
     axum::serve(listener, app).await.unwrap();
 }

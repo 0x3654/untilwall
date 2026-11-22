@@ -101,6 +101,20 @@ verified live: `sqlmap/1.7` UA got 200, a burst of 70 requests all got 200.
 The parity target (the image) therefore has NO rate limiting; the Rust port
 does not implement it either.
 
+## Extension: `tz` parameter (Rust backend only)
+
+`tz` sets the day-boundary timezone as signed hours from UTC: `-5`, `0`,
+`+3`, `+5.5` (range -12..+14). Semantics equal a JS container running with
+that TZ: `now` truncates to local midnight and date-only strings re-pin to
+local midnight, so day counts are plain local-date differences and the
+calendar rolls over at local midnight.
+
+Resolution order: `tz` param > container `TZ` env (IANA name via chrono-tz,
+DST-aware, or a bare number) > UTC. Invalid/out-of-range values fall back to
+the container default. The parameter participates in the SVG cache key.
+Without a `tz` param and with `TZ` unset the output is byte-identical to the
+Next.js reference (golden tests pin this).
+
 ## Behavioral notes pinned by the golden SVGs
 
 - Numbers are interpolated with JS semantics: shortest round-trip floats,

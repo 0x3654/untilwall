@@ -11,6 +11,9 @@ use untilwall::goal::{js_date_ms, parse_params};
 use untilwall::query::Query;
 use untilwall::svg::generate_svg;
 
+/// Golden cases carry no `tz` param; the builder must therefore run with a
+/// zero shift so output stays byte-identical to the UTC reference capture.
+
 fn golden_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -108,7 +111,7 @@ fn golden_svg_byte_parity() {
         let Some(query) = load_case_params(&dir) else {
             continue;
         };
-        let cfg = parse_params(&query, now);
+        let cfg = parse_params(&query, now, 0.0);
         let generated = generate_svg(&cfg);
         let reference = fs::read(dir.join("body")).expect("body readable");
 
@@ -160,7 +163,7 @@ fn png_dimensions_match_golden() {
         let Some(query) = load_case_params(&dir) else {
             continue;
         };
-        let cfg = parse_params(&query, now);
+        let cfg = parse_params(&query, now, 0.0);
         let _svg = generate_svg(&cfg); // exercised for panics; dims checked below
         let scale = 300.0f64 / 72.0;
         let w = (cfg.width * scale).round().max(1.0) as u32;

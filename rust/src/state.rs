@@ -10,4 +10,7 @@ pub struct AppState {
     pub stats: Stats,
     pub fontdb: Arc<usvg::fontdb::Database>,
     pub static_service: StaticService,
+    /// Default UTC offset (ms) for requests without an explicit `tz` param,
+    /// resolved once at startup from the TZ env (IANA name or bare number).
+    pub default_tz_offset_ms: f64,
 }

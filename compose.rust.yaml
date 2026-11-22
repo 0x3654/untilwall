@@ -11,6 +11,7 @@ services:
       - "127.0.0.1:3110:3000"
     environment:
       - NODE_ENV=production
+      - TZ=Europe/Moscow
     volumes:
       - ./rust-data:/app/data
     labels:
