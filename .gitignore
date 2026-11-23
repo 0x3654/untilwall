@@ -50,6 +50,9 @@ tests/golden/html-true/body
 .golden-tmp/
 ui-out/
 
+# Deployment backups (es snapshots etc.)
+.backups/
+
 # TypeScript
 *.tsbuildinfo
 
