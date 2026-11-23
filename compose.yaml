@@ -8,6 +8,9 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - TZ=Europe/Moscow
+      - RENDER_DENSITY=72
+      - RENDER_CONCURRENCY=1
     volumes:
       - ./.data:/app/data
     restart: always
