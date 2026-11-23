@@ -1,10 +1,21 @@
 name: Build and Push Docker Image
 
+# Rust backend image (Dockerfile.rust: UI static export + cargo test with
+# the golden byte-parity suite + slim alpine runtime). Published under the
+# main tag 0x3654/untilwall:latest - the deployment flow (Semaphore ->
+# ansible role) is unchanged. Rollback is manual: pull a previous :sha tag,
+# :stable, or the es backup archive.
+
 on:
   push:
     branches: [main]
     paths:
+      - 'rust/**'
       - 'src/**'
+      - 'tests/golden/**'
+      - 'scripts/golden/**'
+      - 'Dockerfile.rust'
+      - '.dockerignore'
       - 'compose.yaml'
       - '.env.example'
       - '.github/workflows/build.yml'
@@ -13,30 +24,10 @@ on:
 env:
   DOCKER_IMAGE: 0x3654/untilwall
   DOCKER_TAG: ${{ github.sha }}
+  APP_URL: https://untilwall.0x3654.com
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: cd src && npm ci
-
-      - name: Run tests
-        run: |
-          cd src && npm run dev &
-          sleep 10
-          cd src && npm test
-
   build:
-    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -50,34 +41,44 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
 
+      - name: Set up QEMU (for arm64)
+        if: matrix.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build image (local only, not pushed yet)
+      - name: Build image (cargo test with golden parity runs inside)
         uses: docker/build-push-action@v5
         with:
-          context: ./src
+          context: .
+          file: ./Dockerfile.rust
           platforms: ${{ matrix.platform }}
-          load: true  # Load to local docker for testing
+          load: true  # load locally for the smoke test below
           tags: ${{ env.DOCKER_IMAGE }}:test-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          build-args: |
+            APP_URL=${{ env.APP_URL }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
 
-      - name: Test amd64 container
+      - name: Smoke test container (amd64)
         if: matrix.platform == 'linux/amd64'
         run: |
           echo "=== Testing amd64 container ==="
           docker run -d --name untilwall-test -p 3000:3000 \
             -e NODE_ENV=production \
+            -e TZ=Europe/Moscow \
+            -e RENDER_DENSITY=72 \
+            -e RENDER_CONCURRENCY=1 \
             ${{ env.DOCKER_IMAGE }}:test-amd64
 
           # Wait for healthcheck
           for i in {1..30}; do
             if docker ps | grep -q "untilwall-test.*healthy"; then
-              echo "✅ Container is healthy!"
+              echo "Container is healthy"
               break
             fi
             sleep 2
@@ -89,48 +90,27 @@ jobs:
 
           # Test endpoints
           curl -f http://localhost:3000/api/health || exit 1
-          echo "✅ Health endpoint OK"
+          echo "Health endpoint OK"
+          curl -s http://localhost:3000/api/health | grep -q '"defaultTzOffset":3' || exit 1
+          echo "TZ default (Europe/Moscow) OK"
 
           curl -f "http://localhost:3000/goal?start_date=2000-01-01&end_date=2024-01-01&width=1170&height=2532&format=svg" || exit 1
-          echo "✅ Goal endpoint OK"
+          echo "Goal SVG endpoint OK"
+
+          # PNG path: strip renderer + tz param, native resolution at density 72
+          curl -f "http://localhost:3000/goal?start_date=2000-01-01&end_date=2024-01-01&width=1170&height=2532&tz=%2B3" -o /tmp/w.png || exit 1
+          file /tmp/w.png | grep -q "PNG image data, 1170 x 2532" || exit 1
+          echo "PNG (density 72, tz=+3) OK"
+
+          # Exported UI assets are served
+          curl -f -o /dev/null http://localhost:3000/ || exit 1
+          echo "Homepage OK"
 
           docker stop untilwall-test
           docker rm untilwall-test
 
-      - name: Set up QEMU (for arm64 testing)
-        if: matrix.platform == 'linux/arm64'
-        uses: docker/setup-qemu-action@v3
-
-      - name: Test arm64 container (emulation)
-        if: matrix.platform == 'linux/arm64'
-        run: |
-          echo "=== Testing arm64 container (with emulation) ==="
-          docker run -d --name untilwall-test-arm --platform linux/arm64 -p 3001:3000 \
-            -e NODE_ENV=production \
-            ${{ env.DOCKER_IMAGE }}:test-arm64
-
-          # Wait for startup (slower with emulation)
-          echo "Waiting for arm64 container (emulation is slow)..."
-          sleep 30
-
-          # Show logs
-          echo "=== Container logs ==="
-          docker logs untilwall-test-arm || true
-
-          # Check if container is running
-          if docker ps | grep -q "untilwall-test-arm"; then
-            echo "✅ arm64 container is running"
-          else
-            echo "❌ arm64 container failed to start"
-            docker logs untilwall-test-arm || true
-            exit 1
-          fi
-
-          docker stop untilwall-test-arm
-          docker rm untilwall-test-arm
-
-      - name: Tag and push (only if tests passed)
-        if: success()  # Only runs if test steps succeeded
+      - name: Tag and push per-arch (only if tests passed)
+        if: success()
         run: |
           docker tag ${{ env.DOCKER_IMAGE }}:test-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} \
             ${{ env.DOCKER_IMAGE }}:latest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
@@ -141,13 +121,11 @@ jobs:
           docker push ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
 
       - name: Cleanup on failure
-        if: failure()  # Cleanup if tests failed
+        if: failure()
         run: |
-          echo "❌ Tests failed, not pushing to Docker Hub"
+          echo "Tests failed, not pushing to Docker Hub"
           docker stop untilwall-test || true
           docker rm untilwall-test || true
-          docker stop untilwall-test-arm || true
-          docker rm untilwall-test-arm || true
 
   merge-manifests:
     needs: build
@@ -176,7 +154,7 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-amd64 \
             ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}-arm64
 
-          echo "✅ Multi-arch manifests created"
+          echo "Multi-arch manifests created"
           echo "Available tags:"
           echo "  - ${{ env.DOCKER_IMAGE }}:latest (amd64 + arm64)"
           echo "  - ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} (amd64 + arm64)"
@@ -188,4 +166,4 @@ jobs:
             -H "Content-Type: application/json" \
             ${{ secrets.SEMAPHORE_URL }}/api/project/1/tasks \
             -d "{\"template_id\": ${{ secrets.SEMAPHORE_TEMPLATE_ID }}}"
-          echo "✅ Semaphore deploy-untilwall triggered"
+          echo "Semaphore deploy-untilwall triggered"
